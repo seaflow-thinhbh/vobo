@@ -21,8 +21,13 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     } catch {
       token = null;
     }
-    if (token) void s.resume(code, token);
-    else router.replace('/');
+    if (token) {
+      void s.resume(code, token).then((r) => {
+        if (!r.ok) router.replace('/');
+      });
+    } else {
+      router.replace('/');
+    }
   }, [inThisRoom, s.connected, s, code, router]);
 
   if (!inThisRoom || !s.snapshot) {
@@ -37,6 +42,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     call: s.call,
     leave: async () => {
       const r = await s.leave();
+      s.clearSnapshot();
       router.push('/');
       return r;
     },

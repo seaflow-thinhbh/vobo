@@ -35,8 +35,8 @@ export function RoomView({ snapshot, actions }: { snapshot: RoomSnapshot; action
     return (
       <CardEditor
         onSubmit={async (card) => {
-          await actions.fillCard(card);
-          await actions.ready();
+          const r = (await actions.fillCard(card)) as { ok?: boolean } | undefined;
+          if (r?.ok !== false) await actions.ready();
         }}
       />
     );

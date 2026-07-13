@@ -11,6 +11,7 @@ type Ok = Ack<Record<string, never>>;
 interface SocketContextValue {
   connected: boolean;
   snapshot: RoomSnapshot | null;
+  clearSnapshot: () => void;
   createRoom: (name: string) => Promise<Ack<{ code: string; playerId: string; token: string }>>;
   joinRoom: (code: string, name: string) => Promise<Ack<{ playerId: string; token: string }>>;
   resume: (code: string, token: string) => Promise<Ack<{ playerId: string }>>;
@@ -70,6 +71,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const value: SocketContextValue = {
     connected,
     snapshot,
+    clearSnapshot: () => setSnapshot(null),
     createRoom: async (name) => {
       const r = await emit<Ack<{ code: string; playerId: string; token: string }>>('room:create', { name });
       if (r.ok) saveToken(r.code, r.token);
