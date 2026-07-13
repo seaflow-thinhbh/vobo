@@ -1,0 +1,14 @@
+# Render Blueprint for the @vobo/server realtime server.
+# In the Render dashboard: New → Blueprint → point at this repo.
+services:
+  - type: web
+    name: vobo-server
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # Set to your deployed web origin, e.g. https://vobo.vercel.app
+      # (comma-separated for several). Leave unset to allow all origins.
+      - key: WEB_ORIGIN
+        sync: false

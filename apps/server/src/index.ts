@@ -12,10 +12,30 @@ export interface RunningServer {
   stop: () => Promise<void>;
 }
 
+/**
+ * Allowed CORS origin(s) for the web client. Set WEB_ORIGIN in production to the
+ * deployed web URL (comma-separated for several), e.g. "https://vobo.vercel.app".
+ * Unset (local/LAN dev) falls back to "*".
+ */
+function corsOrigin(): string | string[] {
+  const raw = process.env.WEB_ORIGIN;
+  if (!raw) return '*';
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 export async function startServer(port = Number(process.env.PORT ?? 3001)): Promise<RunningServer> {
-  const http = createServer();
+  const http = createServer((req, res) => {
+    // Health check + a friendly response for a plain browser hit; Socket.IO handles /socket.io/*.
+    if (req.url === '/' || req.url === '/healthz') {
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      res.end('vobo-server ok');
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(http, {
-    cors: { origin: '*' },
+    cors: { origin: corsOrigin() },
   });
   const store = new InMemoryRoomStore();
   const manager = new RoomManager(store, DEFAULT_CONFIG);
