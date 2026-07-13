@@ -33,13 +33,19 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       isBot: p.isBot,
       connected: p.isBot || room.seats.get(p.id)?.socketId != null,
     }));
+    const view = room.state ? bingoModule.projectStateFor(room.state, playerId) : null;
+    if (view) {
+      for (const opp of view.opponents) {
+        opp.connected = opp.isBot || room.seats.get(opp.id)?.socketId != null;
+      }
+    }
     return {
       code: room.code,
       status: room.state ? room.state.phase : 'lobby',
       hostId: room.hostId,
       youId: playerId,
       roster,
-      view: room.state ? bingoModule.projectStateFor(room.state, playerId) : null,
+      view,
     };
   }
 
@@ -158,6 +164,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       ack(r.ok ? { ok: true } : r);
       if (r.ok && !r.roomDeleted) orchestrate(c.code);
       else if (r.ok && r.roomDeleted) clearTurnTimer(c.code);
+      void socket.leave(c.code);
       conn.code = undefined;
       conn.playerId = undefined;
     });

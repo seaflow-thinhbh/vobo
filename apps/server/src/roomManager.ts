@@ -128,7 +128,7 @@ export class RoomManager {
     if (!cur) return fail('not_playing', 'Không ở lượt chơi');
     const uncalled = uncalledNumbers(room.state.calledNumbers);
     if (uncalled.length === 0) return fail('no_numbers', 'Hết số để hô');
-    const n = uncalled[Math.floor(this.rand() * uncalled.length)]!;
+    const n = uncalled[room.botRng.int(uncalled.length)]!;
     room.state = bingoModule.applyMove(room.state, cur.id, { type: 'CallNumber', n });
     return { ok: true };
   }
@@ -160,7 +160,10 @@ export class RoomManager {
       // lobby: drop from the roster
       room.roster = room.roster.filter((p) => p.id !== playerId);
     } else {
-      // in-game: convert the seat to a bot so the game keeps going
+      // in-game: convert the seat to a bot so the game keeps going.
+      // Safe in-place mutation: bingoModule.applyMove always rebuilds player
+      // objects via spread, so this current-state object isn't shared with any
+      // prior/emitted snapshot.
       const p = room.state.players.find((x) => x.id === playerId);
       if (p) p.isBot = true;
     }

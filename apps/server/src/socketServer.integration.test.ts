@@ -38,6 +38,23 @@ function connect(): ClientSocket {
   return c;
 }
 
+async function startTestServer(cfg: { maxPlayers: number; minPlayers: number; turnMs: number; botDelayMs: number }) {
+  const httpS = createServer();
+  const ioS = new Server(httpS);
+  const store = new InMemoryRoomStore();
+  const manager = new RoomManager(store, cfg);
+  attachSocketServer(ioS, manager, store, cfg);
+  await new Promise<void>((resolve) => httpS.listen(0, resolve));
+  const p = (httpS.address() as { port: number }).port;
+  return {
+    port: p,
+    close: async () => {
+      ioS.close();
+      await new Promise<void>((resolve) => httpS.close(() => resolve()));
+    },
+  };
+}
+
 function emit<T>(c: ClientSocket, event: string, payload?: unknown): Promise<T> {
   return new Promise((resolve) => {
     if (payload === undefined) c.emit(event, resolve);
@@ -137,6 +154,30 @@ describe('socket server (end-to-end)', () => {
     // opponent entries never carry a card
     for (const opp of snapA.view!.opponents) {
       expect((opp as Record<string, unknown>).card).toBeUndefined();
+    }
+  });
+
+  it('auto-advances a stalled human turn via the turn timeout', async () => {
+    // Tiny turnMs so the human turn-timeout fires quickly; the human NEVER calls manually.
+    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 30, botDelayMs: 5 });
+    try {
+      const a = ioClient(`http://localhost:${srv.port}`);
+      clients.push(a);
+
+      const created = await emit<{ ok: true; code: string; playerId: string }>(a, 'room:create', { name: 'An' });
+      await emit(a, 'room:addBot', { difficulty: 'easy' });
+      await emit(a, 'room:start');
+      await emit(a, 'player:fillCard', { card: ordered });
+
+      const finished = new Promise<{ winnerId: string }>((resolve) => a.on('game:finished', resolve));
+      await emit(a, 'player:ready'); // starts play
+
+      // 'a' never calls; its turns must be auto-called by the 30ms turn timeout,
+      // and the bot auto-plays its turns — the game must still finish.
+      const result = await Promise.race([finished, delay(4000).then(() => null)]);
+      expect(result).not.toBeNull();
+    } finally {
+      await srv.close();
     }
   });
 });
