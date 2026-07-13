@@ -1,4 +1,5 @@
-import { createRng } from '@vobo/game-engine';
+import { bingoModule, createRng } from '@vobo/game-engine';
+import type { Difficulty } from '@vobo/game-engine';
 import type { RoomConfig } from './config';
 import type { OpResult, Room } from './types';
 import type { RoomStore } from './roomStore';
@@ -44,5 +45,33 @@ export class RoomManager {
     room.roster.push({ id: playerId, name, isBot: false });
     room.seats.set(playerId, { token });
     return { ok: true, playerId, token };
+  }
+
+  addBot(code: string, hostId: string, difficulty: Difficulty): OpResult {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    if (room.hostId !== hostId) return fail('not_host', 'Chỉ chủ phòng mới thêm bot');
+    if (room.state) return fail('already_started', 'Ván đã bắt đầu');
+    if (room.roster.length >= this.cfg.maxPlayers) return fail('room_full', 'Phòng đã đầy');
+    const botNumber = room.roster.filter((p) => p.isBot).length + 1;
+    room.roster.push({
+      id: 'bot_' + generatePlayerId().slice(2),
+      name: `Bot ${botNumber}`,
+      isBot: true,
+      botDifficulty: difficulty,
+    });
+    return { ok: true };
+  }
+
+  startGame(code: string, hostId: string): OpResult {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    if (room.hostId !== hostId) return fail('not_host', 'Chỉ chủ phòng mới bắt đầu');
+    if (room.state) return fail('already_started', 'Ván đã bắt đầu');
+    if (room.roster.length < this.cfg.minPlayers) {
+      return fail('not_enough_players', `Cần ít nhất ${this.cfg.minPlayers} người`);
+    }
+    room.state = bingoModule.createInitialState(room.roster, room.rng);
+    return { ok: true };
   }
 }
