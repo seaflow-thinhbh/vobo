@@ -132,6 +132,53 @@ export class RoomManager {
     room.state = bingoModule.applyMove(room.state, cur.id, { type: 'CallNumber', n });
     return { ok: true };
   }
+
+  attachSocket(code: string, playerId: string, socketId: string): void {
+    const seat = this.store.get(code)?.seats.get(playerId);
+    if (seat) seat.socketId = socketId;
+  }
+
+  markDisconnected(code: string, playerId: string): void {
+    const seat = this.store.get(code)?.seats.get(playerId);
+    if (seat) seat.socketId = undefined;
+  }
+
+  resume(code: string, token: string): OpResult<{ playerId: string }> {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    for (const [playerId, seat] of room.seats) {
+      if (seat.token === token) return { ok: true, playerId };
+    }
+    return fail('bad_token', 'Phiên không hợp lệ');
+  }
+
+  leave(code: string, playerId: string): OpResult<{ roomDeleted: boolean }> {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+
+    if (!room.state) {
+      // lobby: drop from the roster
+      room.roster = room.roster.filter((p) => p.id !== playerId);
+    } else {
+      // in-game: convert the seat to a bot so the game keeps going
+      const p = room.state.players.find((x) => x.id === playerId);
+      if (p) p.isBot = true;
+    }
+    room.seats.delete(playerId);
+
+    // transfer host if needed
+    if (room.hostId === playerId) {
+      const nextHuman = [...room.seats.keys()][0];
+      if (nextHuman) room.hostId = nextHuman;
+    }
+
+    // delete the room when no human seats remain
+    if (room.seats.size === 0) {
+      this.store.delete(code);
+      return { ok: true, roomDeleted: true };
+    }
+    return { ok: true, roomDeleted: false };
+  }
 }
 
 function uncalledNumbers(called: number[]): number[] {
