@@ -4,7 +4,19 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { io, type Socket } from 'socket.io-client';
 import type { RoomSnapshot, Ack, Difficulty } from './types';
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL ?? 'http://localhost:3001';
+/**
+ * Where the realtime server lives. Priority:
+ *  1. NEXT_PUBLIC_SERVER_URL (explicit override, e.g. production).
+ *  2. The same host that served this page, on port 3001 — so opening the app
+ *     via a LAN IP (http://192.168.x.y:3000) auto-connects to that host's
+ *     server (http://192.168.x.y:3001) instead of the visitor's own localhost.
+ *  3. localhost:3001 as a last resort (SSR/build; the socket only opens in the browser).
+ */
+function resolveServerUrl(): string {
+  if (process.env.NEXT_PUBLIC_SERVER_URL) return process.env.NEXT_PUBLIC_SERVER_URL;
+  if (typeof window !== 'undefined') return `${window.location.protocol}//${window.location.hostname}:3001`;
+  return 'http://localhost:3001';
+}
 
 type Ok = Ack<Record<string, never>>;
 
@@ -45,7 +57,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
 
   useEffect(() => {
-    const socket = io(SERVER_URL);
+    const socket = io(resolveServerUrl());
     socketRef.current = socket;
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
