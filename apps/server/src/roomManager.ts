@@ -74,4 +74,29 @@ export class RoomManager {
     room.state = bingoModule.createInitialState(room.roster, room.rng);
     return { ok: true };
   }
+
+  fillCard(code: string, playerId: string, card: number[]): OpResult {
+    return this.applyGameMove(code, playerId, { type: 'FillCard', card });
+  }
+
+  setReady(code: string, playerId: string): OpResult {
+    return this.applyGameMove(code, playerId, { type: 'SetReady' });
+  }
+
+  callNumber(code: string, playerId: string, n: number): OpResult {
+    return this.applyGameMove(code, playerId, { type: 'CallNumber', n });
+  }
+
+  private applyGameMove(
+    code: string,
+    playerId: string,
+    move: import('@vobo/game-engine').BingoMove,
+  ): OpResult {
+    const room = this.store.get(code);
+    if (!room || !room.state) return fail('no_game', 'Ván chưa bắt đầu');
+    const check = bingoModule.validateMove(room.state, playerId, move);
+    if (!check.ok) return fail(check.code, check.message);
+    room.state = bingoModule.applyMove(room.state, playerId, move);
+    return { ok: true };
+  }
 }
