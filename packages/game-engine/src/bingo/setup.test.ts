@@ -14,7 +14,7 @@ describe('isValidCard', () => {
 
   it('rejects duplicates', () => {
     const card = Array.from({ length: 25 }, (_, i) => i + 1);
-    card[24] = card[0]; // duplicate
+    card[24] = card[0]!; // duplicate
     expect(isValidCard(card)).toBe(false);
   });
 
