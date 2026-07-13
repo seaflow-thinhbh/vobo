@@ -1,5 +1,5 @@
 import { bingoModule, createRng } from '@vobo/game-engine';
-import type { Difficulty } from '@vobo/game-engine';
+import type { Difficulty, BingoPlayer } from '@vobo/game-engine';
 import type { RoomConfig } from './config';
 import type { OpResult, Room } from './types';
 import type { RoomStore } from './roomStore';
@@ -99,4 +99,44 @@ export class RoomManager {
     room.state = bingoModule.applyMove(room.state, playerId, move);
     return { ok: true };
   }
+
+  /** The player whose turn it is, or undefined outside the playing phase. */
+  currentPlayer(room: Room): BingoPlayer | undefined {
+    const state = room.state;
+    if (!state || state.phase !== 'playing') return undefined;
+    const id = state.turnOrder[state.currentTurn];
+    return state.players.find((p) => p.id === id);
+  }
+
+  /** Apply the current bot's chosen move (no-op guard if not a bot's turn). */
+  botCall(code: string): OpResult {
+    const room = this.store.get(code);
+    if (!room || !room.state) return fail('no_game', 'Ván chưa bắt đầu');
+    const cur = this.currentPlayer(room);
+    if (!cur) return fail('not_playing', 'Không ở lượt chơi');
+    const view = bingoModule.projectStateFor(room.state, cur.id);
+    const move = bingoModule.botMove(view, cur.botDifficulty ?? 'medium', room.botRng);
+    room.state = bingoModule.applyMove(room.state, cur.id, move);
+    return { ok: true };
+  }
+
+  /** Call a random legal number for the current player (turn-timeout / disconnected). */
+  autoCall(code: string): OpResult {
+    const room = this.store.get(code);
+    if (!room || !room.state) return fail('no_game', 'Ván chưa bắt đầu');
+    const cur = this.currentPlayer(room);
+    if (!cur) return fail('not_playing', 'Không ở lượt chơi');
+    const uncalled = uncalledNumbers(room.state.calledNumbers);
+    if (uncalled.length === 0) return fail('no_numbers', 'Hết số để hô');
+    const n = uncalled[Math.floor(this.rand() * uncalled.length)]!;
+    room.state = bingoModule.applyMove(room.state, cur.id, { type: 'CallNumber', n });
+    return { ok: true };
+  }
+}
+
+function uncalledNumbers(called: number[]): number[] {
+  const set = new Set(called);
+  const out: number[] = [];
+  for (let n = 1; n <= 25; n++) if (!set.has(n)) out.push(n);
+  return out;
 }
