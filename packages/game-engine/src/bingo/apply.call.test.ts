@@ -22,10 +22,14 @@ function nearWinState(): BingoState {
 
 describe('applyMove (CallNumber)', () => {
   it('appends the called number and advances the turn when no one wins', () => {
-    const s = applyMove(nearWinState(), 'a', { type: 'CallNumber', n: 6 });
+    const s0 = nearWinState();
+    const s = applyMove(s0, 'a', { type: 'CallNumber', n: 6 });
     expect(s.calledNumbers).toContain(6);
     expect(s.phase).toBe('playing');
     expect(s.currentTurn).toBe(1); // now b's turn
+    // purity: input state must not be mutated
+    expect(s0.calledNumbers).toEqual([1, 2, 3, 4]);
+    expect(s0.currentTurn).toBe(0);
   });
 
   it('recomputes completedLines for all players on each call', () => {
@@ -62,6 +66,27 @@ describe('winner resolution (caller-priority)', () => {
     const s = applyMove(bothAboutToWin(), 'a', { type: 'CallNumber', n: 5 });
     expect(s.phase).toBe('finished');
     expect(s.winners).toEqual(['a']); // caller wins the tie
+  });
+
+  it('awards the win to the first player forward from the caller when the caller is NOT a winner', () => {
+    // Called so far: 1..20. Caller 'a' calls 21.
+    // 'b' has the ordered card: with 1..21 marked, columns/rows complete a 5th line -> b wins.
+    // 'a' has a card that places 22,23,24,25 at cells {1,5,12,24}, so with 1..21 marked
+    // only 2 lines complete -> a is NOT among the winners.
+    const aCard = [1, 22, 2, 3, 4, 23, 5, 6, 7, 8, 9, 10, 24, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25];
+    const called = Array.from({ length: 20 }, (_, i) => i + 1); // 1..20
+    const state: BingoState = {
+      phase: 'playing',
+      players: [player('a', aCard), player('b', ordered)],
+      turnOrder: ['a', 'b'],
+      currentTurn: 0, // 'a' is the caller
+      calledNumbers: called,
+      winners: [],
+    };
+    const s = applyMove(state, 'a', { type: 'CallNumber', n: 21 });
+    expect(s.phase).toBe('finished');
+    expect(s.winners).toEqual(['b']); // caller 'a' did not win; 'b' is first forward
+    expect(s.players.find((p) => p.id === 'a')!.completedLines).toBeLessThan(5);
   });
 });
 

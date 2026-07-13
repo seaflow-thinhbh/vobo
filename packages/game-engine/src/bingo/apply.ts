@@ -66,5 +66,5 @@ function resolveWinner(turnOrder: string[], callerId: string, winnersSet: string
 }
 
 export function checkGameEnd(state: BingoState): GameEnd {
-  return { finished: state.phase === 'finished', winners: state.winners };
+  return { finished: state.phase === 'finished', winners: [...state.winners] };
 }

@@ -9,6 +9,8 @@ export function botMove(view: BingoView, difficulty: Difficulty, rng: Rng): Bing
   if (difficulty === 'easy') {
     return { type: 'CallNumber', n: uncalled[rng.int(uncalled.length)]! };
   }
+  // medium/hard are deterministic greedy; the rng param is unused on this path
+  // (kept to satisfy the GameModule.botMove signature).
   return { type: 'CallNumber', n: greedyPick(view.you.card, view.calledNumbers, uncalled, difficulty) };
 }
 
