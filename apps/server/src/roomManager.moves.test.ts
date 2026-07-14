@@ -31,11 +31,14 @@ describe('RoomManager game moves', () => {
   });
 
   it('rejects calling out of turn', () => {
-    const { m, code, a, b } = twoHumanGame();
+    const { store, m, code, a, b } = twoHumanGame();
     m.fillCard(code, a, ordered); m.setReady(code, a);
     m.fillCard(code, b, ordered); m.setReady(code, b);
-    // turnOrder starts with a; b calling should be rejected
-    expect(m.callNumber(code, b, 7)).toMatchObject({ ok: false, code: 'not_your_turn' });
-    expect(m.callNumber(code, a, 7).ok).toBe(true);
+    // turn order is shuffled — derive who is actually on turn
+    const state = store.get(code)!.state!;
+    const current = state.turnOrder[state.currentTurn]!;
+    const other = current === a ? b : a;
+    expect(m.callNumber(code, other, 7)).toMatchObject({ ok: false, code: 'not_your_turn' });
+    expect(m.callNumber(code, current, 7).ok).toBe(true);
   });
 });
