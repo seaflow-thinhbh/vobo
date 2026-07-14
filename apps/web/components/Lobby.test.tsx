@@ -20,6 +20,8 @@ function lobbySnap(rosterLen: number): RoomSnapshot {
     view: null,
     turnStartedAt: null,
     turnEndsAt: null,
+    turnMs: 20000,
+    rolling: false,
   };
 }
 
@@ -59,6 +61,8 @@ describe('FinishedPanel', () => {
     },
     turnStartedAt: null,
     turnEndsAt: null,
+    turnMs: 20000,
+    rolling: false,
   };
 
   it('announces the winner and lets the host start a new game', async () => {
