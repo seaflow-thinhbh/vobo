@@ -1,7 +1,7 @@
 import { bingoModule, createRng } from '@vobo/game-engine';
 import type { Difficulty, BingoPlayer } from '@vobo/game-engine';
 import type { RoomConfig } from './config';
-import type { OpResult, Room } from './types';
+import type { OpResult, OpenRoom, Room } from './types';
 import type { RoomStore } from './roomStore';
 import { generateRoomCode } from './roomCode';
 import { generatePlayerId, generateToken } from './ids';
@@ -181,6 +181,23 @@ export class RoomManager {
       return { ok: true, roomDeleted: true };
     }
     return { ok: true, roomDeleted: false };
+  }
+
+  /** Joinable rooms for the landing-page list: in lobby (not started) and not full. */
+  listOpenRooms(): OpenRoom[] {
+    const out: OpenRoom[] = [];
+    for (const room of this.store.values()) {
+      if (room.state) continue; // started
+      if (room.roster.length >= this.cfg.maxPlayers) continue; // full
+      const host = room.roster.find((p) => p.id === room.hostId);
+      out.push({
+        code: room.code,
+        hostName: host?.name ?? '?',
+        playerCount: room.roster.length,
+        maxPlayers: this.cfg.maxPlayers,
+      });
+    }
+    return out;
   }
 }
 
