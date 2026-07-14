@@ -24,6 +24,9 @@ export function ResultOverlay({
   const winnerId = snapshot.view?.winners[0];
   const youWon = winnerId === snapshot.youId;
   const winnerName = snapshot.roster.find((r) => r.id === winnerId)?.name ?? '?';
+  const youVoted = snapshot.replayVotes?.includes(snapshot.youId) ?? false;
+  const votedCount = snapshot.replayVotes?.length ?? 0;
+  const totalHumans = snapshot.roster.filter((r) => !r.isBot).length;
   const container = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -99,14 +102,36 @@ export function ResultOverlay({
       <div className="w-56 max-w-full">
         <Leaderboard roster={snapshot.roster} />
       </div>
-      <div className="mt-2 flex gap-2">
+      <div className="mt-2 flex flex-col items-center gap-2">
         <button
           type="button"
           onClick={onPlayAgain}
-          className="rounded bg-emerald-600 px-4 py-2 font-medium text-white"
+          disabled={youVoted}
+          className={`rounded px-4 py-2 font-medium ${
+            youVoted
+              ? 'cursor-not-allowed bg-emerald-100 text-emerald-700'
+              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+          }`}
         >
-          Chơi lại
+          {youVoted ? 'Đã sẵn sàng ✓' : 'Chơi lại'}
         </button>
+        <p className="text-xs text-slate-500">
+          {votedCount}/{totalHumans} người đã sẵn sàng
+        </p>
+        <div className="flex flex-wrap justify-center gap-1">
+          {snapshot.roster.filter((r) => !r.isBot).map((r) => (
+            <span
+              key={r.id}
+              className={`rounded px-1.5 py-0.5 text-xs ${
+                snapshot.replayVotes?.includes(r.id)
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-slate-100 text-slate-400'
+              }`}
+            >
+              {r.name} {snapshot.replayVotes?.includes(r.id) ? '✓' : '…'}
+            </span>
+          ))}
+        </div>
         <button
           type="button"
           onClick={onLeave}
