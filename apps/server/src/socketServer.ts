@@ -100,8 +100,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     const requireConn = () =>
       conn.code && conn.playerId ? { code: conn.code, playerId: conn.playerId } : undefined;
 
-    socket.on('room:create', ({ name }, ack) => {
-      const { code, playerId, token } = manager.createRoom(name);
+    socket.on('room:create', ({ name, turnMs }, ack) => {
+      const { code, playerId, token } = manager.createRoom(name, turnMs);
       conn.code = code;
       conn.playerId = playerId;
       manager.attachSocket(code, playerId, socket.id);
