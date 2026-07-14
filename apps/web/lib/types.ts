@@ -39,6 +39,15 @@ export interface RoomSnapshot {
   youId: string;
   roster: RosterEntry[];
   view: BingoView | null;
+  turnStartedAt: number | null;
+  turnEndsAt: number | null;
+}
+
+export interface OpenRoom {
+  code: string;
+  hostName: string;
+  playerCount: number;
+  maxPlayers: number;
 }
 
 export type Ack<T> = ({ ok: true } & T) | { ok: false; code: string; message: string };

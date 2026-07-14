@@ -18,6 +18,8 @@ function lobbySnap(rosterLen: number): RoomSnapshot {
       connected: true,
     })),
     view: null,
+    turnStartedAt: null,
+    turnEndsAt: null,
   };
 }
 
@@ -41,23 +43,36 @@ describe('Lobby', () => {
 });
 
 describe('FinishedPanel', () => {
-  it('announces the winner', () => {
-    const snap: RoomSnapshot = {
-      code: 'K7QX9P',
-      status: 'finished',
-      hostId: 'you',
-      youId: 'you',
-      roster: [{ id: 'you', name: 'An', isBot: false, connected: true }],
-      view: {
-        phase: 'finished',
-        you: { id: 'you', card: [], marked: [], completedLines: 5, ready: true },
-        opponents: [],
-        calledNumbers: [],
-        currentPlayerId: null,
-        winners: ['you'],
-      },
-    };
-    render(<FinishedPanel snapshot={snap} onLeave={() => {}} />);
+  const snap: RoomSnapshot = {
+    code: 'K7QX9P',
+    status: 'finished',
+    hostId: 'you',
+    youId: 'you',
+    roster: [{ id: 'you', name: 'An', isBot: false, connected: true }],
+    view: {
+      phase: 'finished',
+      you: { id: 'you', card: [], marked: [], completedLines: 5, ready: true },
+      opponents: [],
+      calledNumbers: [],
+      currentPlayerId: null,
+      winners: ['you'],
+    },
+    turnStartedAt: null,
+    turnEndsAt: null,
+  };
+
+  it('announces the winner and lets the host start a new game', async () => {
+    const onNewGame = vi.fn();
+    const user = userEvent.setup();
+    render(<FinishedPanel snapshot={snap} isHost onNewGame={onNewGame} onLeave={() => {}} />);
     expect(screen.getByText('🎉 Bạn thắng!')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ván mới' }));
+    expect(onNewGame).toHaveBeenCalled();
+  });
+
+  it('non-host sees a waiting message instead of the new-game button', () => {
+    render(<FinishedPanel snapshot={snap} isHost={false} onNewGame={() => {}} onLeave={() => {}} />);
+    expect(screen.queryByRole('button', { name: 'Ván mới' })).toBeNull();
+    expect(screen.getByText(/Chờ chủ phòng/)).toBeInTheDocument();
   });
 });

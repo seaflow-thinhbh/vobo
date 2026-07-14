@@ -40,6 +40,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     fillCard: s.fillCard,
     ready: s.ready,
     call: s.call,
+    newGame: s.newGame,
     leave: async () => {
       const r = await s.leave();
       s.clearSnapshot();
