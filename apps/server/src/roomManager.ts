@@ -199,6 +199,24 @@ export class RoomManager {
     }
     return out;
   }
+
+  /** Host resets a finished game back to the room lobby, ready for another game. */
+  returnToLobby(code: string, hostId: string): OpResult {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    if (room.hostId !== hostId) return fail('not_host', 'Chỉ chủ phòng mới mở ván mới');
+    if (!room.state || room.state.phase !== 'finished') {
+      return fail('not_finished', 'Ván chưa kết thúc');
+    }
+    // Keep still-present players: connected humans (have a seat) + real bots (id 'bot_').
+    room.roster = room.state.players
+      .filter((p) => room.seats.has(p.id) || p.id.startsWith('bot_'))
+      .map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, botDifficulty: p.botDifficulty }));
+    room.state = undefined;
+    room.turnStartedAt = undefined;
+    room.turnEndsAt = undefined;
+    return { ok: true };
+  }
 }
 
 function uncalledNumbers(called: number[]): number[] {
