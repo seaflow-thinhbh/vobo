@@ -14,6 +14,8 @@ export interface Room {
   seats: Map<string, Seat>; // playerId -> auth/connection (HUMANS only; bots have no seat)
   rng: Rng; // engine RNG (card generation)
   botRng: Rng; // bot decision RNG
+  turnStartedAt?: number; // epoch ms when the current turn began (playing only)
+  turnEndsAt?: number; // epoch ms deadline for the current turn (playing only)
 }
 
 export type RoomStatus = 'lobby' | 'setup' | 'playing' | 'finished';
@@ -30,6 +32,14 @@ export interface RosterEntry {
   connected: boolean;
 }
 
+/** A joinable room shown in the landing-page room list. */
+export interface OpenRoom {
+  code: string;
+  hostName: string;
+  playerCount: number;
+  maxPlayers: number;
+}
+
 /** Per-player snapshot pushed to a client after any change. */
 export interface RoomSnapshot {
   code: string;
@@ -38,6 +48,8 @@ export interface RoomSnapshot {
   youId: string;
   roster: RosterEntry[];
   view: BingoView | null; // null during lobby; player-specific once started
+  turnStartedAt: number | null; // epoch ms; set only while playing
+  turnEndsAt: number | null; // epoch ms; set only while playing
 }
 
 // ---- Socket payloads & acks ----
@@ -65,10 +77,14 @@ export interface ClientToServerEvents {
   'room:start': (ack: (r: Ack<OkAck>) => void) => void;
   'game:call': (p: CallPayload, ack: (r: Ack<OkAck>) => void) => void;
   'room:leave': (ack: (r: Ack<OkAck>) => void) => void;
+  'room:newGame': (ack: (r: Ack<OkAck>) => void) => void;
+  'rooms:subscribe': (ack: (rooms: OpenRoom[]) => void) => void;
+  'rooms:unsubscribe': (ack: (r: OkAck) => void) => void;
 }
 
 export interface ServerToClientEvents {
   'room:state': (snapshot: RoomSnapshot) => void;
   'game:finished': (p: { winnerId: string }) => void;
   'error': (p: { code: string; message: string }) => void;
+  'rooms:list': (rooms: OpenRoom[]) => void;
 }

@@ -46,6 +46,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       youId: playerId,
       roster,
       view,
+      turnStartedAt: room.state?.phase === 'playing' ? (room.turnStartedAt ?? null) : null,
+      turnEndsAt: room.state?.phase === 'playing' ? (room.turnEndsAt ?? null) : null,
     };
   }
 
@@ -57,21 +59,34 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     }
   }
 
-  /** Broadcast, then drive automated turns (bot moves / turn timeouts) and end-of-game. */
+  const LOBBY = '@lobby';
+  function broadcastRooms(): void {
+    io.to(LOBBY).emit('rooms:list', manager.listOpenRooms());
+  }
+
+  /** Drive automated turns (bot moves / turn timeouts) and end-of-game, then broadcast. */
   function orchestrate(code: string): void {
-    broadcast(code);
     clearTurnTimer(code);
     const room = store.get(code);
-    if (!room || !room.state) return;
+    if (!room || !room.state) { broadcast(code); return; }
 
     if (room.state.phase === 'finished') {
+      room.turnStartedAt = undefined;
+      room.turnEndsAt = undefined;
+      broadcast(code);
       io.to(code).emit('game:finished', { winnerId: room.state.winners[0]! });
       return;
     }
-    if (room.state.phase !== 'playing') return;
+    if (room.state.phase !== 'playing') { broadcast(code); return; }
 
     const cur = manager.currentPlayer(room);
-    if (!cur) return;
+    if (!cur) { broadcast(code); return; }
+    // Record the deadline before broadcasting so the pushed snapshot reflects
+    // the turn that clients are about to see, not the previous one.
+    const now = Date.now();
+    room.turnStartedAt = now;
+    room.turnEndsAt = now + (cur.isBot ? cfg.botDelayMs : cfg.turnMs);
+    broadcast(code);
     if (cur.isBot) {
       turnTimers.set(code, setTimeout(() => { manager.botCall(code); orchestrate(code); }, cfg.botDelayMs));
     } else {
@@ -93,6 +108,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       void socket.join(code);
       ack({ ok: true, code, playerId, token });
       broadcast(code);
+      broadcastRooms();
     });
 
     socket.on('room:join', ({ code, name }, ack) => {
@@ -104,6 +120,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       void socket.join(code);
       ack({ ok: true, playerId: r.playerId, token: r.token });
       broadcast(code);
+      broadcastRooms();
     });
 
     socket.on('room:resume', ({ code, token }, ack) => {
@@ -130,7 +147,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
       const r = manager.startGame(c.code, c.playerId);
       ack(r.ok ? { ok: true } : r);
-      if (r.ok) orchestrate(c.code);
+      if (r.ok) { orchestrate(c.code); broadcastRooms(); }
     });
 
     socket.on('player:fillCard', ({ card }, ack) => {
@@ -164,9 +181,31 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       ack(r.ok ? { ok: true } : r);
       if (r.ok && !r.roomDeleted) orchestrate(c.code);
       else if (r.ok && r.roomDeleted) clearTurnTimer(c.code);
+      if (r.ok) broadcastRooms();
       void socket.leave(c.code);
       conn.code = undefined;
       conn.playerId = undefined;
+    });
+
+    socket.on('room:newGame', (ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      const r = manager.returnToLobby(c.code, c.playerId);
+      ack(r.ok ? { ok: true } : r);
+      if (r.ok) {
+        orchestrate(c.code); // pushes the lobby snapshot to everyone
+        broadcastRooms(); // the room is joinable again
+      }
+    });
+
+    socket.on('rooms:subscribe', (ack) => {
+      void socket.join(LOBBY);
+      ack(manager.listOpenRooms());
+    });
+
+    socket.on('rooms:unsubscribe', (ack) => {
+      void socket.leave(LOBBY);
+      ack({ ok: true });
     });
 
     socket.on('disconnect', () => {

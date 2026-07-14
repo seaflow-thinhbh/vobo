@@ -6,6 +6,7 @@ export interface RoomStore {
   get(code: string): Room | undefined;
   has(code: string): boolean;
   delete(code: string): void;
+  values(): Room[];
 }
 
 export class InMemoryRoomStore implements RoomStore {
@@ -25,5 +26,9 @@ export class InMemoryRoomStore implements RoomStore {
 
   delete(code: string): void {
     this.rooms.delete(code);
+  }
+
+  values(): Room[] {
+    return [...this.rooms.values()];
   }
 }
