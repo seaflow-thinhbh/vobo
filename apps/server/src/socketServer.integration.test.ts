@@ -246,6 +246,9 @@ describe('socket server (end-to-end)', () => {
       await delay(15);
     }
     await Promise.race([finished, delay(2000)]);
+    expect(snap?.status).toBe('finished');
+    const winsAtFinish = (snap?.roster ?? []).reduce((t, p) => t + (p.wins ?? 0), 0);
+    expect(winsAtFinish).toBe(1); // exactly one win counted (no double-count across broadcasts)
 
     // Now start a new game -> back to lobby.
     const backToLobby = new Promise<RoomSnapshot>((resolve) => {
@@ -256,6 +259,8 @@ describe('socket server (end-to-end)', () => {
     const lobby = await Promise.race([backToLobby, delay(1500).then(() => null)]);
     expect(lobby).not.toBeNull();
     expect(lobby!.status).toBe('lobby');
+    const winsInLobby = lobby!.roster.reduce((t, p) => t + (p.wins ?? 0), 0);
+    expect(winsInLobby).toBe(1); // the tally persists into the next lobby
   });
 
   it('reports the room turn time in the snapshot and uses it for the timer', async () => {

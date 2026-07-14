@@ -13,6 +13,7 @@ function makeRoom(code: string): Room {
     rng: createRng(1),
     botRng: createRng(2),
     turnMs: 20_000,
+    wins: {},
   };
 }
 
