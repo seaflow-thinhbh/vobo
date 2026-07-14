@@ -31,25 +31,36 @@ function snapshot(winnerId: string, youId: string): RoomSnapshot {
 describe('ResultOverlay', () => {
   beforeEach(() => vi.mocked(confetti).mockClear());
 
-  it('winner branch: celebrates and fires confetti when motion is allowed', () => {
+  function withMotionAllowed(fn: () => void): void {
     const original = window.matchMedia;
     window.matchMedia = vi
       .fn()
       .mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+    try {
+      fn();
+    } finally {
+      window.matchMedia = original;
+    }
+  }
 
-    render(<ResultOverlay snapshot={snapshot('you', 'you')} onPlayAgain={() => {}} onLeave={() => {}} />);
-    expect(document.querySelector('[data-result="win"]')).toBeTruthy();
-    expect(screen.getByText('🎉 Bạn thắng!')).toBeInTheDocument();
-    expect(vi.mocked(confetti)).toHaveBeenCalled();
-
-    window.matchMedia = original;
+  it('winner branch: celebrates and fires confetti when motion is allowed', () => {
+    withMotionAllowed(() => {
+      render(<ResultOverlay snapshot={snapshot('you', 'you')} onPlayAgain={() => {}} onLeave={() => {}} />);
+      expect(document.querySelector('[data-result="win"]')).toBeTruthy();
+      expect(screen.getByText('🎉 Bạn thắng!')).toBeInTheDocument();
+      expect(vi.mocked(confetti)).toHaveBeenCalled();
+    });
   });
 
-  it('loser branch: shows the winner name and fires no confetti', () => {
-    render(<ResultOverlay snapshot={snapshot('p2', 'you')} onPlayAgain={() => {}} onLeave={() => {}} />);
-    expect(document.querySelector('[data-result="lose"]')).toBeTruthy();
-    expect(screen.getByText('Lan thắng!')).toBeInTheDocument();
-    expect(vi.mocked(confetti)).not.toHaveBeenCalled();
+  it('loser branch: shows the winner name and fires no confetti (even with motion on)', () => {
+    // Assert on the motion-enabled path: a regression that moved confetti out of the
+    // winner-only branch would fire here, so reduced motion must not mask it.
+    withMotionAllowed(() => {
+      render(<ResultOverlay snapshot={snapshot('p2', 'you')} onPlayAgain={() => {}} onLeave={() => {}} />);
+      expect(document.querySelector('[data-result="lose"]')).toBeTruthy();
+      expect(screen.getByText('Lan thắng!')).toBeInTheDocument();
+      expect(vi.mocked(confetti)).not.toHaveBeenCalled();
+    });
   });
 
   it('shows Chơi lại + Thoát phòng for everyone and wires the callbacks', async () => {

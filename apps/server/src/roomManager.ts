@@ -206,7 +206,7 @@ export class RoomManager {
     return out;
   }
 
-  /** Host resets a finished game back to the room lobby, ready for another game. */
+  /** Any participant resets a finished game back to the room lobby, ready for another game. */
   returnToLobby(code: string, playerId: string): OpResult {
     const room = this.store.get(code);
     if (!room) return fail('no_room', 'Không tìm thấy phòng');
