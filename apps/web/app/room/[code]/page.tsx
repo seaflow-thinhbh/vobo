@@ -41,6 +41,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     ready: s.ready,
     call: s.call,
     newGame: s.newGame,
+    kickPlayer: s.kickPlayer,
     leave: async () => {
       const r = await s.leave();
       s.clearSnapshot();

@@ -8,11 +8,13 @@ export function Lobby({
   isHost,
   onAddBot,
   onStart,
+  onKick,
 }: {
   snapshot: RoomSnapshot;
   isHost: boolean;
   onAddBot: (d: Difficulty) => void;
   onStart: () => void;
+  onKick: (playerId: string) => void;
 }) {
   const canStart = snapshot.roster.length >= 2;
   return (
@@ -29,6 +31,17 @@ export function Lobby({
             {p.isBot && <span className="ml-auto text-xs text-slate-400">bot</span>}
             {p.id === snapshot.hostId && (
               <span className={`text-xs text-amber-600 ${p.isBot ? '' : 'ml-auto'}`}>chủ phòng</span>
+            )}
+            {isHost && !p.isBot && p.id !== snapshot.youId && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`Đá ${p.name} khỏi phòng?`)) onKick(p.id);
+                }}
+                className="ml-auto rounded bg-rose-500 px-2 py-0.5 text-xs text-white hover:bg-rose-600"
+              >
+                Đá
+              </button>
             )}
           </li>
         ))}

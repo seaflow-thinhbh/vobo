@@ -16,13 +16,14 @@ export interface RoomActions {
   call: (n: number) => Promise<unknown>;
   leave: () => Promise<unknown>;
   newGame: () => Promise<unknown>;
+  kickPlayer: (targetPlayerId: string) => Promise<unknown>;
 }
 
 export function RoomView({ snapshot, actions }: { snapshot: RoomSnapshot; actions: RoomActions }) {
   const isHost = snapshot.hostId === snapshot.youId;
 
   if (snapshot.status === 'lobby') {
-    return <Lobby snapshot={snapshot} isHost={isHost} onAddBot={actions.addBot} onStart={actions.start} />;
+    return <Lobby snapshot={snapshot} isHost={isHost} onAddBot={actions.addBot} onStart={actions.start} onKick={actions.kickPlayer} />;
   }
 
   const view = snapshot.view;
