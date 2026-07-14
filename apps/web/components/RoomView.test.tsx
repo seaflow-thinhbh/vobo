@@ -11,6 +11,7 @@ const actions: RoomActions = {
   ready: noop,
   call: noop,
   leave: noop,
+  newGame: noop,
 };
 
 const ordered = Array.from({ length: 25 }, (_, i) => i + 1);
@@ -31,7 +32,7 @@ describe('RoomView', () => {
     expect(screen.getByText('K7QX9P')).toBeInTheDocument();
   });
 
-  it('renders the game board and call panel while playing', () => {
+  it('renders the player carousel and board while playing', () => {
     const snap: RoomSnapshot = {
       code: 'K7QX9P',
       status: 'playing',
@@ -53,8 +54,7 @@ describe('RoomView', () => {
       turnEndsAt: null,
     };
     render(<RoomView snapshot={snap} actions={actions} />);
-    expect(screen.getByText('Lượt của bạn')).toBeInTheDocument();
-    expect(screen.getByText('Chọn số để hô:')).toBeInTheDocument();
-    expect(screen.getByText('Bình')).toBeInTheDocument();
+    expect(screen.getByText(/Bình/)).toBeInTheDocument(); // carousel tile
+    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument(); // board cell
   });
 });

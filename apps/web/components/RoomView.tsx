@@ -4,9 +4,7 @@ import type { RoomSnapshot, Difficulty } from '@/lib/types';
 import { Lobby } from './Lobby';
 import { CardEditor } from './CardEditor';
 import { GameBoard } from './GameBoard';
-import { OpponentStrip } from './OpponentStrip';
-import { TurnIndicator } from './TurnIndicator';
-import { CallPanel } from './CallPanel';
+import { PlayerCarousel } from './PlayerCarousel';
 import { FinishedPanel } from './FinishedPanel';
 
 export interface RoomActions {
@@ -16,6 +14,7 @@ export interface RoomActions {
   ready: () => Promise<unknown>;
   call: (n: number) => Promise<unknown>;
   leave: () => Promise<unknown>;
+  newGame: () => Promise<unknown>;
 }
 
 export function RoomView({ snapshot, actions }: { snapshot: RoomSnapshot; actions: RoomActions }) {
@@ -43,17 +42,23 @@ export function RoomView({ snapshot, actions }: { snapshot: RoomSnapshot; action
   }
 
   if (snapshot.status === 'finished') {
-    return <FinishedPanel snapshot={snapshot} onLeave={actions.leave} />;
+    return (
+      <FinishedPanel snapshot={snapshot} isHost={isHost} onNewGame={actions.newGame} onLeave={actions.leave} />
+    );
   }
 
   // playing
   const isYourTurn = view.currentPlayerId === snapshot.youId;
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-3">
-      <OpponentStrip opponents={view.opponents} currentPlayerId={view.currentPlayerId} />
-      <GameBoard view={view} />
-      <TurnIndicator currentPlayerId={view.currentPlayerId} youId={snapshot.youId} roster={snapshot.roster} />
-      <CallPanel calledNumbers={view.calledNumbers} isYourTurn={isYourTurn} onCall={actions.call} />
+    <div className="mx-auto flex max-w-md flex-col gap-3">
+      <PlayerCarousel
+        players={snapshot.roster}
+        currentPlayerId={view.currentPlayerId}
+        youId={snapshot.youId}
+        turnStartedAt={snapshot.turnStartedAt}
+        turnEndsAt={snapshot.turnEndsAt}
+      />
+      <GameBoard view={view} isYourTurn={isYourTurn} onCall={actions.call} />
     </div>
   );
 }
