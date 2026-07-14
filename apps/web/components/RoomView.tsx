@@ -6,6 +6,7 @@ import { CardEditor } from './CardEditor';
 import { GameBoard } from './GameBoard';
 import { PlayerCarousel } from './PlayerCarousel';
 import { FinishedPanel } from './FinishedPanel';
+import { TurnReveal } from './TurnReveal';
 
 export interface RoomActions {
   addBot: (d: Difficulty) => Promise<unknown>;
@@ -48,6 +49,9 @@ export function RoomView({ snapshot, actions }: { snapshot: RoomSnapshot; action
   }
 
   // playing
+  if (snapshot.rolling) {
+    return <TurnReveal players={snapshot.roster} firstPlayerId={view.currentPlayerId} />;
+  }
   const isYourTurn = view.currentPlayerId === snapshot.youId;
   return (
     <div className="mx-auto flex max-w-md flex-col gap-3">

@@ -27,6 +27,8 @@ describe('RoomView', () => {
       view: null,
       turnStartedAt: null,
       turnEndsAt: null,
+      turnMs: 20000,
+      rolling: false,
     };
     render(<RoomView snapshot={snap} actions={actions} />);
     expect(screen.getByText('K7QX9P')).toBeInTheDocument();
@@ -52,6 +54,8 @@ describe('RoomView', () => {
       },
       turnStartedAt: null,
       turnEndsAt: null,
+      turnMs: 20000,
+      rolling: false,
     };
     render(<RoomView snapshot={snap} actions={actions} />);
     expect(screen.getByText(/Bình/)).toBeInTheDocument(); // carousel tile

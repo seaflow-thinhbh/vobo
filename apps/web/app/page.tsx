@@ -11,6 +11,7 @@ export default function LandingPage() {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [turnSec, setTurnSec] = useState(20);
 
   useEffect(() => {
     if (!connected) return;
@@ -22,7 +23,7 @@ export default function LandingPage() {
 
   async function onCreate() {
     if (!name.trim()) return setError('Nhập tên trước đã');
-    const r = await createRoom(name.trim());
+    const r = await createRoom(name.trim(), turnSec * 1000);
     if (r.ok) router.push(`/room/${r.code}`);
     else setError(r.message);
   }
@@ -45,6 +46,23 @@ export default function LandingPage() {
         placeholder="Tên hiển thị"
         className="mb-3 w-full rounded border border-slate-300 px-3 py-2"
       />
+      <div className="mb-3">
+        <div className="mb-1 text-xs text-slate-500">Thời gian mỗi lượt</div>
+        <div className="flex gap-1">
+          {[15, 20, 30, 45, 60].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setTurnSec(s)}
+              className={`flex-1 rounded py-1.5 text-sm font-medium ${
+                turnSec === s ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {s}s
+            </button>
+          ))}
+        </div>
+      </div>
       <button
         onClick={onCreate}
         disabled={!connected}
