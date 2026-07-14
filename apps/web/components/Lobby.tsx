@@ -20,15 +20,15 @@ export function Lobby({
   return (
     <div className="mx-auto max-w-sm">
       <div className="mb-3 text-center">
-        <div className="text-xs text-slate-500">Mã phòng</div>
+        <div className="text-xs text-slate-400">Mã phòng</div>
         <div className="text-3xl font-bold tracking-widest">{snapshot.code}</div>
       </div>
-      <ul data-roster className="mb-3 divide-y rounded border">
+      <ul data-roster className="mb-3 divide-y divide-slate-700 rounded border border-slate-600">
         {snapshot.roster.map((p) => (
           <li key={p.id} className="flex items-center gap-2 px-3 py-2">
-            <span className={`h-2 w-2 rounded-full ${p.connected ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <span className={`h-2 w-2 rounded-full ${p.connected ? 'bg-emerald-500' : 'bg-slate-600'}`} />
             <span>{p.name}</span>
-            {p.isBot && <span className="ml-auto text-xs text-slate-400">bot</span>}
+            {p.isBot && <span className="ml-auto text-xs text-slate-500">bot</span>}
             {p.id === snapshot.hostId && (
               <span className={`text-xs text-amber-600 ${p.isBot ? '' : 'ml-auto'}`}>chủ phòng</span>
             )}
@@ -57,7 +57,7 @@ export function Lobby({
                 key={d}
                 type="button"
                 onClick={() => onAddBot(d)}
-                className="flex-1 rounded bg-slate-200 py-2 text-sm"
+                className="flex-1 rounded bg-slate-700 py-2 text-sm text-slate-200"
               >
                 + Bot {d}
               </button>
@@ -73,7 +73,7 @@ export function Lobby({
           </button>
         </div>
       ) : (
-        <p className="text-center text-sm text-slate-500">Chờ chủ phòng bắt đầu…</p>
+        <p className="text-center text-sm text-slate-400">Chờ chủ phòng bắt đầu…</p>
       )}
     </div>
   );

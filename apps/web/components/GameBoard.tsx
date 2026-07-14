@@ -66,7 +66,7 @@ export function GameBoard({
     <div ref={container} className="mx-auto w-full max-w-md">
       <div className="mb-2 flex justify-center gap-3 text-xl">
         {BINGO_LETTERS.map((L, i) => (
-          <span key={L} className={letters[i] ? 'font-bold text-emerald-600' : 'text-slate-300'}>
+          <span key={L} className={letters[i] ? 'font-bold text-emerald-500' : 'text-slate-600'}>
             {L}
           </span>
         ))}
@@ -91,8 +91,8 @@ export function GameBoard({
                   : marked
                     ? 'border-amber-300 bg-amber-300 font-bold text-slate-900'
                     : callable
-                      ? 'border-sky-500 text-sky-700'
-                      : 'border-slate-300 text-slate-700'
+                    ? 'border-sky-500 text-sky-300'
+                    : 'border-slate-600 text-slate-300'
               }`}
             >
               {n}

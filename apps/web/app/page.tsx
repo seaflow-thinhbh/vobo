@@ -44,10 +44,10 @@ export default function LandingPage() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Tên hiển thị"
-        className="mb-3 w-full rounded border border-slate-300 px-3 py-2"
+        className="mb-3 w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-slate-100 placeholder:text-slate-500"
       />
       <div className="mb-3">
-        <div className="mb-1 text-xs text-slate-500">Thời gian mỗi lượt</div>
+        <div className="mb-1 text-xs text-slate-400">Thời gian mỗi lượt</div>
         <div className="flex gap-1">
           {[15, 20, 30, 45, 60].map((s) => (
             <button
@@ -55,7 +55,7 @@ export default function LandingPage() {
               type="button"
               onClick={() => setTurnSec(s)}
               className={`flex-1 rounded py-1.5 text-sm font-medium ${
-                turnSec === s ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'
+                turnSec === s ? 'bg-slate-800 text-white' : 'bg-slate-700 text-slate-300'
               }`}
             >
               {s}s
@@ -65,7 +65,7 @@ export default function LandingPage() {
       </div>
       <button
         onClick={onCreate}
-        disabled={!connected || joining}
+        disabled={!connected || joining || !name.trim()}
         className="mb-4 w-full rounded bg-emerald-600 py-2 font-medium text-white disabled:opacity-40"
       >
         {joining ? 'Đang xử lý…' : 'Tạo phòng'}
@@ -75,20 +75,20 @@ export default function LandingPage() {
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Mã phòng"
-          className="w-full rounded border border-slate-300 px-3 py-2 uppercase"
+          className="w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 uppercase text-slate-100 placeholder:text-slate-500"
         />
         <button
           onClick={() => joinCode(code)}
-          disabled={!connected || joining}
+          disabled={!connected || joining || !name.trim()}
           className="rounded bg-sky-600 px-4 font-medium text-white disabled:opacity-40"
         >
           Vào
         </button>
       </div>
       {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
-      {!connected && <p className="mt-3 text-xs text-slate-400">Đang kết nối máy chủ…</p>}
+      {!connected && <p className="mt-3 text-xs text-slate-500">Đang kết nối máy chủ…</p>}
 
-      <h2 className="mb-2 mt-6 text-sm font-semibold text-slate-600">Phòng đang chờ</h2>
+      <h2 className="mb-2 mt-6 text-sm font-semibold text-slate-300">Phòng đang chờ</h2>
       <RoomList rooms={openRooms} onJoin={(c) => joinCode(c)} disabled={!name.trim() || joining} />
     </main>
   );

@@ -42,7 +42,7 @@ export function PlayerCarousel({
                 data-player={p.id}
                 data-current={isCurrent ? 'true' : 'false'}
                 className={`relative px-2 py-3 text-center text-sm font-semibold transition-transform duration-300 ${
-                  isCurrent ? 'bg-slate-50' : 'scale-90 border border-slate-200 bg-white opacity-60'
+                  isCurrent ? 'bg-slate-800' : 'scale-90 border border-slate-600 bg-slate-700 opacity-60'
                 }`}
               >
                 {isCurrent && turnStartedAt != null && turnEndsAt != null && (
@@ -50,7 +50,7 @@ export function PlayerCarousel({
                 )}
                 <div className="flex items-center justify-center gap-1">
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${p.connected ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    className={`h-2 w-2 shrink-0 rounded-full ${p.connected ? 'bg-emerald-500' : 'bg-slate-600'}`}
                   />
                   <span className="truncate">
                     {p.name}

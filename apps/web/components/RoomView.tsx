@@ -5,9 +5,11 @@ import { Lobby } from './Lobby';
 import { CardEditor } from './CardEditor';
 import { GameBoard } from './GameBoard';
 import { PlayerCarousel } from './PlayerCarousel';
+import { ResultCelebration } from './ResultCelebration';
 import { ResultOverlay } from './ResultOverlay';
 import { TurnReveal } from './TurnReveal';
 import { ChatPanel } from './ChatPanel';
+import { Leaderboard } from './Leaderboard';
 
 export interface RoomActions {
   addBot: (d: Difficulty) => Promise<unknown>;
@@ -40,11 +42,11 @@ export function RoomView({
         onClick={async () => {
           if (confirm('Bạn có chắc muốn rời phòng?')) await actions.leave();
         }}
-        className="text-sm text-slate-500 hover:text-slate-700"
+        className="text-sm text-slate-400 hover:text-slate-200"
       >
         ← Quay lại
       </button>
-      <div className="ml-auto text-xs text-slate-400">{snapshot.code}</div>
+      <div className="ml-auto text-xs text-slate-500">{snapshot.code}</div>
     </div>
   );
 
@@ -61,14 +63,14 @@ export function RoomView({
   }
 
   const view = snapshot.view;
-  if (!view) return <p className="text-center text-slate-500">Đang tải…</p>;
+  if (!view) return <p className="text-center text-slate-400">Đang tải…</p>;
 
   if (snapshot.status === 'setup') {
     if (view.you.ready) {
       return (
         <>
           {backButton}
-          <p className="text-center text-slate-500">Chờ người khác điền vé…</p>
+          <p className="text-center text-slate-400">Chờ người khác điền vé…</p>
           {chat}
         </>
       );
@@ -91,15 +93,17 @@ export function RoomView({
     return (
       <>
         {backButton}
-        <div className="relative mx-auto max-w-md">
-          <div className="pointer-events-none opacity-40">
-            <PlayerCarousel
-              players={snapshot.roster}
-              currentPlayerId={view.currentPlayerId}
-              youId={snapshot.youId}
-              turnStartedAt={snapshot.turnStartedAt}
-              turnEndsAt={snapshot.turnEndsAt}
-            />
+        <div className="mx-auto max-w-2xl">
+          <PlayerCarousel
+            players={snapshot.roster}
+            currentPlayerId={view.currentPlayerId}
+            youId={snapshot.youId}
+            turnStartedAt={snapshot.turnStartedAt}
+            turnEndsAt={snapshot.turnEndsAt}
+          />
+          <ResultCelebration snapshot={snapshot} />
+          <Leaderboard roster={snapshot.roster} />
+          <div className="flex justify-center">
             <GameBoard view={view} />
           </div>
           <ResultOverlay snapshot={snapshot} onPlayAgain={actions.readyToReplay} onLeave={actions.leave} />

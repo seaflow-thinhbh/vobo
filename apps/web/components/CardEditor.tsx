@@ -21,7 +21,7 @@ export function CardEditor({
 
   return (
     <div className="mx-auto max-w-sm">
-      <p className="mb-2 text-sm text-slate-600">
+      <p className="mb-2 text-sm text-slate-300">
         Điền số 1–25 vào 25 ô (mỗi số một lần), hoặc bấm “Xếp ngẫu nhiên”.
       </p>
       <div className="grid grid-cols-5 gap-1">
@@ -37,7 +37,7 @@ export function CardEditor({
             onChange={(e) => setCell(i, e.target.value)}
             disabled={disabled}
             className={`h-12 w-full rounded border text-center text-lg ${
-              dups[i] ? 'border-red-500 bg-red-100 text-red-700' : 'border-slate-300'
+              dups[i] ? 'border-red-500 bg-red-900/50 text-red-300' : 'border-slate-600 bg-slate-800 text-slate-100'
             }`}
           />
         ))}
@@ -47,7 +47,7 @@ export function CardEditor({
           type="button"
           onClick={() => setCells(randomArrangement())}
           disabled={disabled}
-          className="flex-1 rounded bg-slate-200 py-2 font-medium"
+          className="flex-1 rounded bg-slate-700 py-2 font-medium text-slate-200"
         >
           Xếp ngẫu nhiên
         </button>
