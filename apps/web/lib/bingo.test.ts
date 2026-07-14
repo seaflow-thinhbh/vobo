@@ -6,6 +6,7 @@ import {
   isValidArrangement,
   randomArrangement,
   completedLineCells,
+  duplicateCells,
 } from './bingo';
 
 describe('bingo helpers', () => {
@@ -60,5 +61,15 @@ describe('completedLineCells', () => {
     expect(cells.has(0)).toBe(true); // shared corner
     expect(cells.has(20)).toBe(true);
     expect(cells.has(6)).toBe(false); // on neither completed line
+  });
+});
+
+describe('duplicateCells', () => {
+  it('flags every cell whose value repeats', () => {
+    expect(duplicateCells([1, 2, 2, null, 3])).toEqual([false, true, true, false, false]);
+  });
+
+  it('flags nothing when values are unique or empty', () => {
+    expect(duplicateCells([1, 2, null, 3])).toEqual([false, false, false, false]);
   });
 });

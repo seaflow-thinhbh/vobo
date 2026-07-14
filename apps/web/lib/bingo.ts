@@ -50,6 +50,15 @@ export function isValidArrangement(cells: (number | null)[]): boolean {
   return true;
 }
 
+/** For each cell, true if its (non-null) value also appears in another cell. */
+export function duplicateCells(cells: (number | null)[]): boolean[] {
+  const counts = new Map<number, number>();
+  for (const c of cells) {
+    if (c != null) counts.set(c, (counts.get(c) ?? 0) + 1);
+  }
+  return cells.map((c) => c != null && (counts.get(c) ?? 0) > 1);
+}
+
 /** A random shuffle of 1..25 for the "Xếp ngẫu nhiên" button (client-side, cosmetic). */
 export function randomArrangement(): number[] {
   const a = Array.from({ length: 25 }, (_, i) => i + 1);
