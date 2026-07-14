@@ -61,4 +61,33 @@ describe('RoomView', () => {
     expect(screen.getByText(/Bình/)).toBeInTheDocument(); // carousel tile
     expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument(); // board cell
   });
+
+  it('renders the result overlay over the board when finished (buttons for non-host too)', () => {
+    const snap: RoomSnapshot = {
+      code: 'K7QX9P',
+      status: 'finished',
+      hostId: 'other', // you are NOT the host -> proves no host gating
+      youId: 'you',
+      roster: [
+        { id: 'you', name: 'An', isBot: false, connected: true },
+        { id: 'b', name: 'Bình', isBot: false, connected: true },
+      ],
+      view: {
+        phase: 'finished',
+        you: { id: 'you', card: ordered, marked: ordered.map(() => false), completedLines: 0, ready: true },
+        opponents: [{ id: 'b', name: 'Bình', isBot: false, completedLines: 0, connected: true, ready: true }],
+        calledNumbers: [],
+        currentPlayerId: 'you',
+        winners: ['b'], // Bình won -> you see the loser overlay
+      },
+      turnStartedAt: null,
+      turnEndsAt: null,
+      turnMs: 20000,
+      rolling: false,
+    };
+    render(<RoomView snapshot={snap} actions={actions} />);
+    expect(document.querySelector('[data-result="lose"]')).toBeTruthy(); // overlay present
+    expect(screen.getByRole('button', { name: 'Chơi lại' })).toBeInTheDocument(); // for all, host is 'other'
+    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument(); // board underneath
+  });
 });
