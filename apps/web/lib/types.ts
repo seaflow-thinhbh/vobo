@@ -1,3 +1,11 @@
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  text: string;
+  timestamp: number;
+}
+
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type RoomStatus = 'lobby' | 'setup' | 'playing' | 'finished';
 
@@ -44,6 +52,7 @@ export interface RoomSnapshot {
   turnEndsAt: number | null;
   turnMs: number;
   rolling: boolean;
+  replayVotes: string[];
 }
 
 export interface OpenRoom {
