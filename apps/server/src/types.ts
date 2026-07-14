@@ -5,6 +5,14 @@ export interface Seat {
   socketId?: string; // present while connected
 }
 
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface Room {
   code: string;
   hostId: string;
@@ -22,6 +30,8 @@ export interface Room {
   revealDone?: boolean; // whether the reveal already ran for the current game
   wins: Record<string, number>; // playerId -> games won this room session
   winRecorded?: boolean; // guard: the current finished game's win was already counted
+  disconnectTimers?: Map<string, ReturnType<typeof setTimeout>>; // bộ đếm ngắt kết nối cho mỗi người chơi
+  replayVotes?: Set<string>; // tập hợp người chơi đã bình chọn chơi lại
 }
 
 export type RoomStatus = 'lobby' | 'setup' | 'playing' | 'finished';
@@ -59,6 +69,7 @@ export interface RoomSnapshot {
   turnEndsAt: number | null; // epoch ms; set only while playing
   turnMs: number; // this room's per-turn time
   rolling: boolean; // true during the dice-reveal window
+  replayVotes: string[]; // danh sách người chơi đã bình chọn chơi lại
 }
 
 // ---- Socket payloads & acks ----
@@ -89,6 +100,9 @@ export interface ClientToServerEvents {
   'room:newGame': (ack: (r: Ack<OkAck>) => void) => void;
   'rooms:subscribe': (ack: (rooms: OpenRoom[]) => void) => void;
   'rooms:unsubscribe': (ack: (r: OkAck) => void) => void;
+  'room:kick': (p: { targetPlayerId: string }, ack: (r: Ack<OkAck>) => void) => void;
+  'room:readyToReplay': (ack: (r: Ack<OkAck>) => void) => void;
+  'chat:send': (p: { text: string }, ack: (r: Ack<OkAck>) => void) => void;
 }
 
 export interface ServerToClientEvents {
@@ -96,4 +110,6 @@ export interface ServerToClientEvents {
   'game:finished': (p: { winnerId: string }) => void;
   'error': (p: { code: string; message: string }) => void;
   'rooms:list': (rooms: OpenRoom[]) => void;
+  'kicked': (p: { reason: string }) => void;
+  'chat:message': (msg: ChatMessage) => void;
 }

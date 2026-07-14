@@ -19,8 +19,8 @@ beforeEach(async () => {
   io = new Server(http);
   const store = new InMemoryRoomStore();
   // turnMs high so timeouts don't interfere with manual play; botDelay small for the bot game
-  const manager = new RoomManager(store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20 });
-  attachSocketServer(io, manager, store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20 });
+  const manager = new RoomManager(store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20, disconnectGraceMs: 30_000 });
+  attachSocketServer(io, manager, store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20, disconnectGraceMs: 30_000 });
   await new Promise<void>((resolve) => http.listen(0, resolve));
   port = (http.address() as { port: number }).port;
 });
@@ -38,7 +38,7 @@ function connect(): ClientSocket {
   return c;
 }
 
-async function startTestServer(cfg: { maxPlayers: number; minPlayers: number; turnMs: number; botDelayMs: number; revealMs: number }) {
+async function startTestServer(cfg: { maxPlayers: number; minPlayers: number; turnMs: number; botDelayMs: number; revealMs: number; disconnectGraceMs: number }) {
   const httpS = createServer();
   const ioS = new Server(httpS);
   const store = new InMemoryRoomStore();
@@ -159,7 +159,7 @@ describe('socket server (end-to-end)', () => {
 
   it('auto-advances a stalled human turn via the turn timeout', async () => {
     // Tiny turnMs so the human turn-timeout fires quickly; the human NEVER calls manually.
-    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 30, botDelayMs: 5, revealMs: 20 });
+    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 30, botDelayMs: 5, revealMs: 20, disconnectGraceMs: 30_000 });
     try {
       const a = ioClient(`http://localhost:${srv.port}`);
       clients.push(a);
@@ -282,7 +282,7 @@ describe('socket server (end-to-end)', () => {
   });
 
   it('runs a short rolling reveal before the first turn, blocking calls', async () => {
-    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 120 });
+    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 120, disconnectGraceMs: 30_000 });
     try {
       const a = ioClient(`http://localhost:${srv.port}`);
       const b = ioClient(`http://localhost:${srv.port}`);

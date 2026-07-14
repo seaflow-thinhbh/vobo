@@ -51,6 +51,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       turnEndsAt: room.state?.phase === 'playing' ? (room.turnEndsAt ?? null) : null,
       turnMs: room.turnMs,
       rolling: room.state?.phase === 'playing' ? (room.rolling ?? false) : false,
+      replayVotes: room.replayVotes ? [...room.replayVotes] : [],
     };
   }
 
