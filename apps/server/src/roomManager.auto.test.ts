@@ -22,9 +22,10 @@ function humanVsBot() {
 
 describe('RoomManager automated turns', () => {
   it('currentPlayer reports whose turn it is in the playing phase', () => {
-    const { store, m, code, a } = humanVsBot();
+    const { store, m, code } = humanVsBot();
     const room = store.get(code)!;
-    expect(m.currentPlayer(room)!.id).toBe(a); // 'a' seated first
+    const cur = m.currentPlayer(room)!;
+    expect(cur.id).toBe(room.state!.turnOrder[room.state!.currentTurn]); // turn order is shuffled
   });
 
   it('autoCall appends a legal number and advances the turn', () => {
@@ -38,7 +39,9 @@ describe('RoomManager automated turns', () => {
 
   it('botCall makes a move when it is the bot turn', () => {
     const { store, m, code } = humanVsBot();
-    m.autoCall(code); // advance past human 'a' -> now bot's turn
+    // Turn order is shuffled: advance one turn only if the human is first, so it is the bot's turn.
+    if (!m.currentPlayer(store.get(code)!)!.isBot) m.autoCall(code);
+    expect(m.currentPlayer(store.get(code)!)!.isBot).toBe(true);
     const before = store.get(code)!.state!.calledNumbers.length;
     const r = m.botCall(code);
     expect(r.ok).toBe(true);

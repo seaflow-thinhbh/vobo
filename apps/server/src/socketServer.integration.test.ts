@@ -19,8 +19,8 @@ beforeEach(async () => {
   io = new Server(http);
   const store = new InMemoryRoomStore();
   // turnMs high so timeouts don't interfere with manual play; botDelay small for the bot game
-  const manager = new RoomManager(store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5 });
-  attachSocketServer(io, manager, store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5 });
+  const manager = new RoomManager(store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20 });
+  attachSocketServer(io, manager, store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20 });
   await new Promise<void>((resolve) => http.listen(0, resolve));
   port = (http.address() as { port: number }).port;
 });
@@ -38,7 +38,7 @@ function connect(): ClientSocket {
   return c;
 }
 
-async function startTestServer(cfg: { maxPlayers: number; minPlayers: number; turnMs: number; botDelayMs: number }) {
+async function startTestServer(cfg: { maxPlayers: number; minPlayers: number; turnMs: number; botDelayMs: number; revealMs: number }) {
   const httpS = createServer();
   const ioS = new Server(httpS);
   const store = new InMemoryRoomStore();
@@ -159,7 +159,7 @@ describe('socket server (end-to-end)', () => {
 
   it('auto-advances a stalled human turn via the turn timeout', async () => {
     // Tiny turnMs so the human turn-timeout fires quickly; the human NEVER calls manually.
-    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 30, botDelayMs: 5 });
+    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 30, botDelayMs: 5, revealMs: 20 });
     try {
       const a = ioClient(`http://localhost:${srv.port}`);
       clients.push(a);
@@ -193,7 +193,7 @@ describe('socket server (end-to-end)', () => {
 
     const playingSnap = await new Promise<RoomSnapshot>((resolve) => {
       a.on('room:state', (s: RoomSnapshot) => {
-        if (s.status === 'playing') resolve(s);
+        if (s.status === 'playing' && !s.rolling) resolve(s);
       });
       void emit(b, 'player:ready'); // transitions to playing
     });
@@ -256,6 +256,61 @@ describe('socket server (end-to-end)', () => {
     const lobby = await Promise.race([backToLobby, delay(1500).then(() => null)]);
     expect(lobby).not.toBeNull();
     expect(lobby!.status).toBe('lobby');
+  });
+
+  it('reports the room turn time in the snapshot and uses it for the timer', async () => {
+    const a = connect();
+    const b = connect();
+    const created = await emit<{ ok: true; code: string }>(a, 'room:create', { name: 'An', turnMs: 15_000 });
+    await emit(b, 'room:join', { code: created.code, name: 'Bình' });
+    await emit(a, 'room:start');
+    await emit(a, 'player:fillCard', { card: ordered });
+    await emit(a, 'player:ready');
+    await emit(b, 'player:fillCard', { card: ordered });
+
+    const snap = await new Promise<RoomSnapshot>((resolve) => {
+      a.on('room:state', (s: RoomSnapshot) => { if (s.status === 'playing' && !s.rolling) resolve(s); });
+      void emit(b, 'player:ready');
+    });
+    expect(snap.turnMs).toBe(15_000);
+    expect(snap.rolling).toBe(false);
+  });
+
+  it('runs a short rolling reveal before the first turn, blocking calls', async () => {
+    const srv = await startTestServer({ maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 120 });
+    try {
+      const a = ioClient(`http://localhost:${srv.port}`);
+      const b = ioClient(`http://localhost:${srv.port}`);
+      clients.push(a, b);
+
+      const created = await emit<{ ok: true; code: string; playerId: string }>(a, 'room:create', { name: 'An' });
+      await emit(b, 'room:join', { code: created.code, name: 'Bình' });
+      await emit(a, 'room:start');
+      await emit(a, 'player:fillCard', { card: ordered });
+      await emit(a, 'player:ready');
+      await emit(b, 'player:fillCard', { card: ordered });
+
+      // Capture the first playing snapshot: it should be rolling with no deadline.
+      const rollingSnap = await new Promise<RoomSnapshot>((resolve) => {
+        a.on('room:state', (s: RoomSnapshot) => { if (s.status === 'playing' && s.rolling) resolve(s); });
+        void emit(b, 'player:ready');
+      });
+      expect(rollingSnap.rolling).toBe(true);
+      expect(rollingSnap.turnEndsAt).toBeNull();
+
+      // A call during rolling is rejected.
+      const rejected = await emit<{ ok: boolean; code?: string }>(a, 'game:call', { n: 1 });
+      expect(rejected.ok).toBe(false);
+
+      // After the reveal window, the turn starts (rolling false, deadline set).
+      const playingSnap = await new Promise<RoomSnapshot>((resolve) => {
+        a.on('room:state', (s: RoomSnapshot) => { if (s.status === 'playing' && !s.rolling && s.turnEndsAt) resolve(s); });
+      });
+      expect(playingSnap.rolling).toBe(false);
+      expect(typeof playingSnap.turnEndsAt).toBe('number');
+    } finally {
+      await srv.close();
+    }
   });
 });
 
