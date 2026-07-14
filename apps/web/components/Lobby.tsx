@@ -1,6 +1,7 @@
 'use client';
 
 import type { RoomSnapshot, Difficulty } from '@/lib/types';
+import { Leaderboard } from './Leaderboard';
 
 export function Lobby({
   snapshot,
@@ -20,7 +21,7 @@ export function Lobby({
         <div className="text-xs text-slate-500">Mã phòng</div>
         <div className="text-3xl font-bold tracking-widest">{snapshot.code}</div>
       </div>
-      <ul className="mb-3 divide-y rounded border">
+      <ul data-roster className="mb-3 divide-y rounded border">
         {snapshot.roster.map((p) => (
           <li key={p.id} className="flex items-center gap-2 px-3 py-2">
             <span className={`h-2 w-2 rounded-full ${p.connected ? 'bg-emerald-500' : 'bg-slate-300'}`} />
@@ -32,6 +33,9 @@ export function Lobby({
           </li>
         ))}
       </ul>
+      <div className="mb-3">
+        <Leaderboard roster={snapshot.roster} />
+      </div>
       {isHost ? (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
