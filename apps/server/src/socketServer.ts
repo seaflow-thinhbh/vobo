@@ -46,6 +46,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       youId: playerId,
       roster,
       view,
+      turnStartedAt: room.state?.phase === 'playing' ? (room.turnStartedAt ?? null) : null,
+      turnEndsAt: room.state?.phase === 'playing' ? (room.turnEndsAt ?? null) : null,
     };
   }
 
@@ -57,21 +59,29 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     }
   }
 
-  /** Broadcast, then drive automated turns (bot moves / turn timeouts) and end-of-game. */
+  /** Drive automated turns (bot moves / turn timeouts) and end-of-game, then broadcast. */
   function orchestrate(code: string): void {
-    broadcast(code);
     clearTurnTimer(code);
     const room = store.get(code);
-    if (!room || !room.state) return;
+    if (!room || !room.state) { broadcast(code); return; }
 
     if (room.state.phase === 'finished') {
+      room.turnStartedAt = undefined;
+      room.turnEndsAt = undefined;
+      broadcast(code);
       io.to(code).emit('game:finished', { winnerId: room.state.winners[0]! });
       return;
     }
-    if (room.state.phase !== 'playing') return;
+    if (room.state.phase !== 'playing') { broadcast(code); return; }
 
     const cur = manager.currentPlayer(room);
-    if (!cur) return;
+    if (!cur) { broadcast(code); return; }
+    // Record the deadline before broadcasting so the pushed snapshot reflects
+    // the turn that clients are about to see, not the previous one.
+    const now = Date.now();
+    room.turnStartedAt = now;
+    room.turnEndsAt = now + (cur.isBot ? cfg.botDelayMs : cfg.turnMs);
+    broadcast(code);
     if (cur.isBot) {
       turnTimers.set(code, setTimeout(() => { manager.botCall(code); orchestrate(code); }, cfg.botDelayMs));
     } else {

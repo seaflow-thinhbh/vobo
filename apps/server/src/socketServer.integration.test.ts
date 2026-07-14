@@ -180,6 +180,28 @@ describe('socket server (end-to-end)', () => {
       await srv.close();
     }
   });
+
+  it('includes turn deadline timestamps in the snapshot while playing', async () => {
+    const a = connect();
+    const b = connect();
+    const created = await emit<{ ok: true; code: string; playerId: string }>(a, 'room:create', { name: 'An' });
+    await emit(b, 'room:join', { code: created.code, name: 'Bình' });
+    await emit(a, 'room:start');
+    await emit(a, 'player:fillCard', { card: ordered });
+    await emit(a, 'player:ready');
+    await emit(b, 'player:fillCard', { card: ordered });
+
+    const playingSnap = await new Promise<RoomSnapshot>((resolve) => {
+      a.on('room:state', (s: RoomSnapshot) => {
+        if (s.status === 'playing') resolve(s);
+      });
+      void emit(b, 'player:ready'); // transitions to playing
+    });
+
+    expect(typeof playingSnap.turnStartedAt).toBe('number');
+    expect(typeof playingSnap.turnEndsAt).toBe('number');
+    expect(playingSnap.turnEndsAt!).toBeGreaterThan(playingSnap.turnStartedAt!);
+  });
 });
 
 function delay(ms: number): Promise<void> {

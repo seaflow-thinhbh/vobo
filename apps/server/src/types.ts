@@ -48,6 +48,8 @@ export interface RoomSnapshot {
   youId: string;
   roster: RosterEntry[];
   view: BingoView | null; // null during lobby; player-specific once started
+  turnStartedAt: number | null; // epoch ms; set only while playing
+  turnEndsAt: number | null; // epoch ms; set only while playing
 }
 
 // ---- Socket payloads & acks ----
