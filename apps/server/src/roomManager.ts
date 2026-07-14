@@ -207,12 +207,14 @@ export class RoomManager {
   }
 
   /** Host resets a finished game back to the room lobby, ready for another game. */
-  returnToLobby(code: string, hostId: string): OpResult {
+  returnToLobby(code: string, playerId: string): OpResult {
     const room = this.store.get(code);
     if (!room) return fail('no_room', 'Không tìm thấy phòng');
-    if (room.hostId !== hostId) return fail('not_host', 'Chỉ chủ phòng mới mở ván mới');
     if (!room.state || room.state.phase !== 'finished') {
       return fail('not_finished', 'Ván chưa kết thúc');
+    }
+    if (!room.state.players.some((p) => p.id === playerId)) {
+      return fail('not_player', 'Bạn không ở trong ván này');
     }
     // Keep still-present players: connected humans (have a seat) + real bots (id 'bot_').
     room.roster = room.state.players
