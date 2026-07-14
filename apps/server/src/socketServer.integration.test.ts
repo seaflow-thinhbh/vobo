@@ -222,6 +222,41 @@ describe('socket server (end-to-end)', () => {
     expect(list).not.toBeNull();
     expect(list![0]).toMatchObject({ hostName: 'An' });
   });
+
+  it('host can start a new game after finish, returning the room to lobby', async () => {
+    const a = connect();
+    const created = await emit<{ ok: true; code: string; playerId: string }>(a, 'room:create', { name: 'An' });
+    await emit(a, 'room:addBot', { difficulty: 'easy' });
+    await emit(a, 'room:start');
+    await emit(a, 'player:fillCard', { card: ordered });
+
+    const finished = new Promise<void>((resolve) => a.on('game:finished', () => resolve()));
+    let snap: RoomSnapshot | undefined;
+    a.on('room:state', (s: RoomSnapshot) => { snap = s; });
+    await emit(a, 'player:ready');
+
+    // 'a' calls on its turns; bot auto-plays until someone wins.
+    for (let i = 0; i < 40; i++) {
+      const s = snap;
+      if (s?.status === 'finished') break;
+      if (s?.status === 'playing' && s.view?.currentPlayerId === created.playerId) {
+        const next = ordered.find((n) => !s.view!.calledNumbers.includes(n));
+        if (next) await emit(a, 'game:call', { n: next });
+      }
+      await delay(15);
+    }
+    await Promise.race([finished, delay(2000)]);
+
+    // Now start a new game -> back to lobby.
+    const backToLobby = new Promise<RoomSnapshot>((resolve) => {
+      a.on('room:state', (s: RoomSnapshot) => { if (s.status === 'lobby') resolve(s); });
+    });
+    const r = await emit<{ ok: boolean }>(a, 'room:newGame');
+    expect(r.ok).toBe(true);
+    const lobby = await Promise.race([backToLobby, delay(1500).then(() => null)]);
+    expect(lobby).not.toBeNull();
+    expect(lobby!.status).toBe('lobby');
+  });
 });
 
 function delay(ms: number): Promise<void> {

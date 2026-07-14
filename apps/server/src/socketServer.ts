@@ -187,6 +187,17 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       conn.playerId = undefined;
     });
 
+    socket.on('room:newGame', (ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      const r = manager.returnToLobby(c.code, c.playerId);
+      ack(r.ok ? { ok: true } : r);
+      if (r.ok) {
+        orchestrate(c.code); // pushes the lobby snapshot to everyone
+        broadcastRooms(); // the room is joinable again
+      }
+    });
+
     socket.on('rooms:subscribe', (ack) => {
       void socket.join(LOBBY);
       ack(manager.listOpenRooms());
