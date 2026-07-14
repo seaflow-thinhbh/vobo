@@ -38,16 +38,29 @@ describe('RoomManager.returnToLobby', () => {
     expect(room.turnEndsAt).toBeUndefined();
   });
 
-  it('rejects non-host and not-finished', () => {
-    const { m, code, host } = finishedRoom();
-    expect(m.returnToLobby(code, 'ghost')).toMatchObject({ ok: false, code: 'not_host' });
+  it('lets a NON-host participant return a finished game to lobby', () => {
+    const store = new InMemoryRoomStore();
+    const m = new RoomManager(store, DEFAULT_CONFIG);
+    const a = m.createRoom('An');
+    const b = m.joinRoom(a.code, 'Bình') as { ok: true; playerId: string };
+    m.startGame(a.code, a.playerId);
+    const room = store.get(a.code)!;
+    room.state!.phase = 'finished';
+    room.state!.winners = [a.playerId];
+
+    const r = m.returnToLobby(a.code, b.playerId); // Bình is not the host
+    expect(r.ok).toBe(true);
+    expect(store.get(a.code)!.state).toBeUndefined();
+  });
+
+  it('rejects a non-participant and a not-finished room', () => {
+    const { m, code } = finishedRoom();
+    expect(m.returnToLobby(code, 'ghost')).toMatchObject({ ok: false, code: 'not_player' });
 
     // a fresh lobby room (never started) -> not_finished
     const store2 = new InMemoryRoomStore();
     const m2 = new RoomManager(store2, DEFAULT_CONFIG);
     const a = m2.createRoom('An');
     expect(m2.returnToLobby(a.code, a.playerId)).toMatchObject({ ok: false, code: 'not_finished' });
-    void code;
-    void host;
   });
 });

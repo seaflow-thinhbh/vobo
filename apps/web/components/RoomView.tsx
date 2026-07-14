@@ -5,7 +5,7 @@ import { Lobby } from './Lobby';
 import { CardEditor } from './CardEditor';
 import { GameBoard } from './GameBoard';
 import { PlayerCarousel } from './PlayerCarousel';
-import { FinishedPanel } from './FinishedPanel';
+import { ResultOverlay } from './ResultOverlay';
 import { TurnReveal } from './TurnReveal';
 
 export interface RoomActions {
@@ -44,7 +44,19 @@ export function RoomView({ snapshot, actions }: { snapshot: RoomSnapshot; action
 
   if (snapshot.status === 'finished') {
     return (
-      <FinishedPanel snapshot={snapshot} isHost={isHost} onNewGame={actions.newGame} onLeave={actions.leave} />
+      <div className="relative mx-auto max-w-md">
+        <div className="pointer-events-none opacity-40">
+          <PlayerCarousel
+            players={snapshot.roster}
+            currentPlayerId={view.currentPlayerId}
+            youId={snapshot.youId}
+            turnStartedAt={snapshot.turnStartedAt}
+            turnEndsAt={snapshot.turnEndsAt}
+          />
+          <GameBoard view={view} />
+        </div>
+        <ResultOverlay snapshot={snapshot} onPlayAgain={actions.newGame} onLeave={actions.leave} />
+      </div>
     );
   }
 

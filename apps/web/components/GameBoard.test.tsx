@@ -40,4 +40,19 @@ describe('GameBoard', () => {
     rerender(<GameBoard view={view()} isYourTurn={false} onCall={onCall} />);
     expect(screen.getByRole('button', { name: '4' })).toBeDisabled(); // off turn
   });
+
+  it('updates data-marked when a new number is marked across rerenders', () => {
+    const base = view();
+    const { rerender } = render(<GameBoard view={base} />);
+    expect(screen.getByRole('button', { name: '4' }).getAttribute('data-marked')).toBe('false');
+
+    const next: BingoView = {
+      ...base,
+      you: { ...base.you, marked: base.you.marked.map((m, i) => m || i === 3) },
+      calledNumbers: [1, 2, 3, 4],
+    };
+    rerender(<GameBoard view={next} />);
+    expect(screen.getByRole('button', { name: '4' }).getAttribute('data-marked')).toBe('true');
+    expect(screen.getByRole('button', { name: '4' }).getAttribute('data-idx')).toBe('3');
+  });
 });

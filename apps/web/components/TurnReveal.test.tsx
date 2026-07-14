@@ -15,4 +15,10 @@ describe('TurnReveal', () => {
     expect(screen.getByText(/Đi đầu:/)).toBeInTheDocument();
     expect(screen.getByText('Bình')).toBeInTheDocument();
   });
+
+  it('under reduced motion, marks the first player as highlighted', () => {
+    render(<TurnReveal players={players} firstPlayerId="b" />);
+    expect(screen.getByText('Bình').getAttribute('data-highlight')).toBe('true');
+    expect(screen.getByText('An').getAttribute('data-highlight')).toBe('false');
+  });
 });
