@@ -257,6 +257,24 @@ describe('socket server (end-to-end)', () => {
     expect(lobby).not.toBeNull();
     expect(lobby!.status).toBe('lobby');
   });
+
+  it('reports the room turn time in the snapshot and uses it for the timer', async () => {
+    const a = connect();
+    const b = connect();
+    const created = await emit<{ ok: true; code: string }>(a, 'room:create', { name: 'An', turnMs: 15_000 });
+    await emit(b, 'room:join', { code: created.code, name: 'Bình' });
+    await emit(a, 'room:start');
+    await emit(a, 'player:fillCard', { card: ordered });
+    await emit(a, 'player:ready');
+    await emit(b, 'player:fillCard', { card: ordered });
+
+    const snap = await new Promise<RoomSnapshot>((resolve) => {
+      a.on('room:state', (s: RoomSnapshot) => { if (s.status === 'playing') resolve(s); });
+      void emit(b, 'player:ready');
+    });
+    expect(snap.turnMs).toBe(15_000);
+    expect(snap.rolling).toBe(false);
+  });
 });
 
 function delay(ms: number): Promise<void> {

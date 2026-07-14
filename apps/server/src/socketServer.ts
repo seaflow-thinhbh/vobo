@@ -48,6 +48,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       view,
       turnStartedAt: room.state?.phase === 'playing' ? (room.turnStartedAt ?? null) : null,
       turnEndsAt: room.state?.phase === 'playing' ? (room.turnEndsAt ?? null) : null,
+      turnMs: room.turnMs,
+      rolling: room.state?.phase === 'playing' ? (room.rolling ?? false) : false,
     };
   }
 
@@ -85,12 +87,12 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     // the turn that clients are about to see, not the previous one.
     const now = Date.now();
     room.turnStartedAt = now;
-    room.turnEndsAt = now + (cur.isBot ? cfg.botDelayMs : cfg.turnMs);
+    room.turnEndsAt = now + (cur.isBot ? cfg.botDelayMs : room.turnMs);
     broadcast(code);
     if (cur.isBot) {
       turnTimers.set(code, setTimeout(() => { manager.botCall(code); orchestrate(code); }, cfg.botDelayMs));
     } else {
-      turnTimers.set(code, setTimeout(() => { manager.autoCall(code); orchestrate(code); }, cfg.turnMs));
+      turnTimers.set(code, setTimeout(() => { manager.autoCall(code); orchestrate(code); }, room.turnMs));
     }
   }
 

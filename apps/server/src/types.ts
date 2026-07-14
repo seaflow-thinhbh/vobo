@@ -54,6 +54,8 @@ export interface RoomSnapshot {
   view: BingoView | null; // null during lobby; player-specific once started
   turnStartedAt: number | null; // epoch ms; set only while playing
   turnEndsAt: number | null; // epoch ms; set only while playing
+  turnMs: number; // this room's per-turn time
+  rolling: boolean; // true during the dice-reveal window
 }
 
 // ---- Socket payloads & acks ----
