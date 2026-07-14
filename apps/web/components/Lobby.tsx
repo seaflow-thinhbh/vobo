@@ -1,6 +1,7 @@
 'use client';
 
 import type { RoomSnapshot, Difficulty } from '@/lib/types';
+import { Leaderboard } from './Leaderboard';
 
 export function Lobby({
   snapshot,
@@ -32,6 +33,9 @@ export function Lobby({
           </li>
         ))}
       </ul>
+      <div className="mb-3">
+        <Leaderboard roster={snapshot.roster} />
+      </div>
       {isHost ? (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
