@@ -41,6 +41,8 @@ export interface RoomSnapshot {
   view: BingoView | null;
   turnStartedAt: number | null;
   turnEndsAt: number | null;
+  turnMs: number;
+  rolling: boolean;
 }
 
 export interface OpenRoom {

@@ -28,8 +28,6 @@ function setReady(state: BingoState, playerId: string): BingoState {
     ...state,
     players,
     phase: 'playing',
-    turnOrder: players.map((p) => p.id),
-    currentTurn: 0,
   };
 }
 

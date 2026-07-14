@@ -1,6 +1,7 @@
 import { bingoModule, createRng } from '@vobo/game-engine';
 import type { Difficulty, BingoPlayer } from '@vobo/game-engine';
 import type { RoomConfig } from './config';
+import { TURN_PRESETS_MS } from './config';
 import type { OpResult, OpenRoom, Room } from './types';
 import type { RoomStore } from './roomStore';
 import { generateRoomCode } from './roomCode';
@@ -17,7 +18,7 @@ export class RoomManager {
     private rand: () => number = Math.random,
   ) {}
 
-  createRoom(name: string): { code: string; playerId: string; token: string } {
+  createRoom(name: string, turnMs?: number): { code: string; playerId: string; token: string } {
     const code = generateRoomCode(this.rand, (c) => this.store.has(c));
     const playerId = generatePlayerId();
     const token = generateToken();
@@ -30,6 +31,7 @@ export class RoomManager {
       seats: new Map([[playerId, { token }]]),
       rng: createRng(seed),
       botRng: createRng(seed ^ 0x9e3779b9),
+      turnMs: turnMs !== undefined && TURN_PRESETS_MS.includes(turnMs) ? turnMs : this.cfg.turnMs,
     };
     this.store.create(room);
     return { code, playerId, token };
@@ -71,7 +73,11 @@ export class RoomManager {
     if (room.roster.length < this.cfg.minPlayers) {
       return fail('not_enough_players', `Cần ít nhất ${this.cfg.minPlayers} người`);
     }
-    room.state = bingoModule.createInitialState(room.roster, room.rng);
+    room.rolling = false;
+    room.revealDone = false;
+    room.state = bingoModule.createInitialState(room.roster, room.rng, {
+      firstPlayerId: room.lastWinnerId,
+    });
     return { ok: true };
   }
 

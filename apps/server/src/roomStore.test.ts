@@ -12,6 +12,7 @@ function makeRoom(code: string): Room {
     seats: new Map(),
     rng: createRng(1),
     botRng: createRng(2),
+    turnMs: 20_000,
   };
 }
 

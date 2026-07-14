@@ -34,14 +34,14 @@ describe('applyMove (setup)', () => {
     expect(s.players.find((p) => p.id === 'a')!.ready).toBe(true);
   });
 
-  it('transitions to playing when the last player readies, seeding turnOrder', () => {
+  it('transitions to playing when the last player readies (turnOrder is set by createInitialState, not here)', () => {
     let s = twoHumanSetup();
     s = applyMove(s, 'a', { type: 'FillCard', card: ordered });
     s = applyMove(s, 'a', { type: 'SetReady' });
     s = applyMove(s, 'b', { type: 'FillCard', card: ordered });
     s = applyMove(s, 'b', { type: 'SetReady' });
     expect(s.phase).toBe('playing');
-    expect(s.turnOrder).toEqual(['a', 'b']);
     expect(s.currentTurn).toBe(0);
+    expect(s.turnOrder).toEqual([]); // fixture never set it; setReady no longer seeds it
   });
 });

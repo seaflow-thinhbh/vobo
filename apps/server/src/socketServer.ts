@@ -48,6 +48,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       view,
       turnStartedAt: room.state?.phase === 'playing' ? (room.turnStartedAt ?? null) : null,
       turnEndsAt: room.state?.phase === 'playing' ? (room.turnEndsAt ?? null) : null,
+      turnMs: room.turnMs,
+      rolling: room.state?.phase === 'playing' ? (room.rolling ?? false) : false,
     };
   }
 
@@ -71,6 +73,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     if (!room || !room.state) { broadcast(code); return; }
 
     if (room.state.phase === 'finished') {
+      room.lastWinnerId = room.state.winners[0];
       room.turnStartedAt = undefined;
       room.turnEndsAt = undefined;
       broadcast(code);
@@ -79,18 +82,51 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     }
     if (room.state.phase !== 'playing') { broadcast(code); return; }
 
+    // Fair dice reveal at the very start of a game: hold the turn timer for revealMs.
+    const isGameStart = room.state.calledNumbers.length === 0 && room.state.currentTurn === 0;
+    if (isGameStart && !room.revealDone) {
+      room.rolling = true;
+      room.revealDone = true;
+      room.turnStartedAt = undefined;
+      room.turnEndsAt = undefined;
+      broadcast(code);
+      turnTimers.set(
+        code,
+        setTimeout(() => {
+          const r = store.get(code);
+          if (r) r.rolling = false;
+          orchestrate(code);
+        }, cfg.revealMs),
+      );
+      return;
+    }
+    if (room.rolling) {
+      // Re-entered mid-reveal (e.g. a leave): the shared timer was just cleared at
+      // the top, so re-arm the reveal end or the room would stay stuck rolling.
+      broadcast(code);
+      turnTimers.set(
+        code,
+        setTimeout(() => {
+          const r = store.get(code);
+          if (r) r.rolling = false;
+          orchestrate(code);
+        }, cfg.revealMs),
+      );
+      return;
+    }
+
     const cur = manager.currentPlayer(room);
     if (!cur) { broadcast(code); return; }
     // Record the deadline before broadcasting so the pushed snapshot reflects
     // the turn that clients are about to see, not the previous one.
     const now = Date.now();
     room.turnStartedAt = now;
-    room.turnEndsAt = now + (cur.isBot ? cfg.botDelayMs : cfg.turnMs);
+    room.turnEndsAt = now + (cur.isBot ? cfg.botDelayMs : room.turnMs);
     broadcast(code);
     if (cur.isBot) {
       turnTimers.set(code, setTimeout(() => { manager.botCall(code); orchestrate(code); }, cfg.botDelayMs));
     } else {
-      turnTimers.set(code, setTimeout(() => { manager.autoCall(code); orchestrate(code); }, cfg.turnMs));
+      turnTimers.set(code, setTimeout(() => { manager.autoCall(code); orchestrate(code); }, room.turnMs));
     }
   }
 
@@ -100,8 +136,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     const requireConn = () =>
       conn.code && conn.playerId ? { code: conn.code, playerId: conn.playerId } : undefined;
 
-    socket.on('room:create', ({ name }, ack) => {
-      const { code, playerId, token } = manager.createRoom(name);
+    socket.on('room:create', ({ name, turnMs }, ack) => {
+      const { code, playerId, token } = manager.createRoom(name, turnMs);
       conn.code = code;
       conn.playerId = playerId;
       manager.attachSocket(code, playerId, socket.id);
@@ -169,6 +205,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     socket.on('game:call', ({ n }, ack) => {
       const c = requireConn();
       if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      if (store.get(c.code)?.rolling) return ack({ ok: false, code: 'rolling', message: 'Đang chọn lượt đi đầu' });
       const r = manager.callNumber(c.code, c.playerId, n);
       ack(r.ok ? { ok: true } : r);
       if (r.ok) orchestrate(c.code);

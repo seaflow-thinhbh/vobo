@@ -24,4 +24,15 @@ describe('CardEditor', () => {
     const card = onSubmit.mock.calls[0]![0] as number[];
     expect(isValidArrangement(card)).toBe(true);
   });
+
+  it('flags cells that duplicate another cell value', async () => {
+    const user = userEvent.setup();
+    render(<CardEditor onSubmit={() => {}} />);
+    await user.type(screen.getByLabelText('Ô 1'), '5');
+    await user.type(screen.getByLabelText('Ô 2'), '5');
+    await user.type(screen.getByLabelText('Ô 3'), '7');
+    expect(screen.getByLabelText('Ô 1').getAttribute('data-duplicate')).toBe('true');
+    expect(screen.getByLabelText('Ô 2').getAttribute('data-duplicate')).toBe('true');
+    expect(screen.getByLabelText('Ô 3').getAttribute('data-duplicate')).toBe('false');
+  });
 });
