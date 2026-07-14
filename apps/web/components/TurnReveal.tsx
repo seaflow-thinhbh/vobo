@@ -37,6 +37,9 @@ export function TurnReveal({
         onUpdate: () => setHighlight(Math.floor(proxy.t) % n),
         onComplete: () => {
           setHighlight(landingIndex);
+          // Intentional scope escape: this pop is created inside onComplete (async),
+          // so useGSAP's context won't auto-revert it. Harmless — it only exists on the
+          // happy path after the spin completes and ends the chip at scale(1) regardless.
           const el = container.current?.querySelector(`[data-chip="${landingIndex}"]`);
           if (el) {
             gsap.fromTo(
