@@ -31,7 +31,7 @@ export function PlayerCarousel({
             key={p.id}
             data-player={p.id}
             data-current={isCurrent ? 'true' : 'false'}
-            className={`relative min-w-[84px] rounded-full px-4 py-3 text-center text-sm font-semibold ${
+            className={`relative min-w-[84px] rounded-none px-4 py-3 text-center text-sm font-semibold ${
               isCurrent ? 'bg-slate-50' : 'scale-90 border border-slate-200 bg-white opacity-60'
             }`}
           >

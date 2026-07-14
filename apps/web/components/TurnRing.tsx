@@ -43,20 +43,19 @@ export function TurnRing({ startedAt, endsAt }: { startedAt: number; endsAt: num
       aria-hidden="true"
     >
       {/* gray track = full perimeter (the elapsed part shows through here) */}
-      <rect x="1.5" y="1.5" width="97" height="97" rx="48" fill="none" stroke="#cbd5e1" strokeWidth="3" />
+      <rect x="2.5" y="2.5" width="95" height="95" fill="none" stroke="#cbd5e1" strokeWidth="5" />
       {/* colored arc = remaining time, depleting */}
       <rect
-        x="1.5"
-        y="1.5"
-        width="97"
-        height="97"
-        rx="48"
+        x="2.5"
+        y="2.5"
+        width="95"
+        height="95"
         pathLength={100}
         fill="none"
         stroke={stroke}
-        strokeWidth="3"
+        strokeWidth="5"
         strokeDasharray={`${fraction * 100} 100`}
-        strokeLinecap="round"
+        strokeLinecap="butt"
       />
     </svg>
   );
