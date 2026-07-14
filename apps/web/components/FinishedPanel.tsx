@@ -1,6 +1,13 @@
 'use client';
 
+import { useRef } from 'react';
+import confetti from 'canvas-confetti';
 import type { RoomSnapshot } from '@/lib/types';
+import { registerGsap, prefersReducedMotion, gsap, useGSAP } from '@/lib/motion';
+
+registerGsap();
+
+const CELEBRATION = ['B', 'I', 'N', 'G', 'O'] as const;
 
 export function FinishedPanel({
   snapshot,
@@ -16,9 +23,45 @@ export function FinishedPanel({
   const winnerId = snapshot.view?.winners[0];
   const youWon = winnerId === snapshot.youId;
   const name = snapshot.roster.find((r) => r.id === winnerId)?.name ?? '?';
+  const container = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return;
+      const tl = gsap.timeline();
+      tl.from('[data-celebrate="letter"]', {
+        y: -16,
+        scale: 0.4,
+        opacity: 0,
+        stagger: 0.08,
+        duration: 0.4,
+        ease: 'back.out(2)',
+      });
+      tl.from(
+        '[data-celebrate="banner"]',
+        { y: 20, scale: 0.8, opacity: 0, duration: 0.5, ease: 'back.out(1.7)' },
+        '-=0.2',
+      );
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.3 } });
+      gsap.delayedCall(0.25, () =>
+        confetti({ particleCount: 50, spread: 100, origin: { y: 0.35 } }),
+      );
+    },
+    { scope: container },
+  );
+
   return (
-    <div className="mx-auto max-w-sm text-center">
-      <h2 className="text-2xl font-bold">{youWon ? '🎉 Bạn thắng!' : `${name} thắng!`}</h2>
+    <div ref={container} className="mx-auto max-w-sm text-center">
+      <div className="mb-3 flex justify-center gap-2 text-3xl font-extrabold text-emerald-500">
+        {CELEBRATION.map((L) => (
+          <span key={L} data-celebrate="letter">
+            {L}
+          </span>
+        ))}
+      </div>
+      <h2 data-celebrate="banner" className="text-2xl font-bold">
+        {youWon ? '🎉 Bạn thắng!' : `${name} thắng!`}
+      </h2>
       <div className="mt-4 flex flex-col items-center gap-2">
         {isHost ? (
           <button
