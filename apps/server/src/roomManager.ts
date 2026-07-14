@@ -1,7 +1,7 @@
 import { bingoModule, createRng } from '@vobo/game-engine';
 import type { Difficulty, BingoPlayer } from '@vobo/game-engine';
 import type { RoomConfig } from './config';
-import type { OpResult, Room } from './types';
+import type { OpResult, OpenRoom, Room } from './types';
 import type { RoomStore } from './roomStore';
 import { generateRoomCode } from './roomCode';
 import { generatePlayerId, generateToken } from './ids';
@@ -181,6 +181,41 @@ export class RoomManager {
       return { ok: true, roomDeleted: true };
     }
     return { ok: true, roomDeleted: false };
+  }
+
+  /** Joinable rooms for the landing-page list: in lobby (not started) and not full. */
+  listOpenRooms(): OpenRoom[] {
+    const out: OpenRoom[] = [];
+    for (const room of this.store.values()) {
+      if (room.state) continue; // started
+      if (room.roster.length >= this.cfg.maxPlayers) continue; // full
+      const host = room.roster.find((p) => p.id === room.hostId);
+      out.push({
+        code: room.code,
+        hostName: host?.name ?? '?',
+        playerCount: room.roster.length,
+        maxPlayers: this.cfg.maxPlayers,
+      });
+    }
+    return out;
+  }
+
+  /** Host resets a finished game back to the room lobby, ready for another game. */
+  returnToLobby(code: string, hostId: string): OpResult {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    if (room.hostId !== hostId) return fail('not_host', 'Chỉ chủ phòng mới mở ván mới');
+    if (!room.state || room.state.phase !== 'finished') {
+      return fail('not_finished', 'Ván chưa kết thúc');
+    }
+    // Keep still-present players: connected humans (have a seat) + real bots (id 'bot_').
+    room.roster = room.state.players
+      .filter((p) => room.seats.has(p.id) || p.id.startsWith('bot_'))
+      .map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, botDifficulty: p.botDifficulty }));
+    room.state = undefined;
+    room.turnStartedAt = undefined;
+    room.turnEndsAt = undefined;
+    return { ok: true };
   }
 }
 

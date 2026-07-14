@@ -30,4 +30,11 @@ describe('InMemoryRoomStore', () => {
     store.delete('XYZ');
     expect(store.get('XYZ')).toBeUndefined();
   });
+
+  it('values() lists all rooms', () => {
+    const store = new InMemoryRoomStore();
+    store.create(makeRoom('AAA'));
+    store.create(makeRoom('BBB'));
+    expect(store.values().map((r) => r.code).sort()).toEqual(['AAA', 'BBB']);
+  });
 });
