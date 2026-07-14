@@ -32,6 +32,7 @@ export class RoomManager {
       rng: createRng(seed),
       botRng: createRng(seed ^ 0x9e3779b9),
       turnMs: turnMs !== undefined && TURN_PRESETS_MS.includes(turnMs) ? turnMs : this.cfg.turnMs,
+      wins: {},
     };
     this.store.create(room);
     return { code, playerId, token };
@@ -75,6 +76,7 @@ export class RoomManager {
     }
     room.rolling = false;
     room.revealDone = false;
+    room.winRecorded = false;
     room.state = bingoModule.createInitialState(room.roster, room.rng, {
       firstPlayerId: room.lastWinnerId,
     });
@@ -204,6 +206,14 @@ export class RoomManager {
       });
     }
     return out;
+  }
+
+  /** Count the winner of a just-finished game, exactly once. Safe to call repeatedly. */
+  recordWin(room: Room): void {
+    if (!room.state || room.state.phase !== 'finished' || room.winRecorded) return;
+    const winnerId = room.state.winners[0];
+    if (winnerId) room.wins[winnerId] = (room.wins[winnerId] ?? 0) + 1;
+    room.winRecorded = true;
   }
 
   /** Any participant resets a finished game back to the room lobby, ready for another game. */

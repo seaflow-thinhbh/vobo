@@ -6,6 +6,7 @@ export interface RosterEntry {
   name: string;
   isBot: boolean;
   connected: boolean;
+  wins?: number; // games won this room session (server always sends it)
 }
 
 export interface OpponentView {

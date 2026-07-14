@@ -32,6 +32,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       name: p.name,
       isBot: p.isBot,
       connected: p.isBot || room.seats.get(p.id)?.socketId != null,
+      wins: room.wins[p.id] ?? 0,
     }));
     const view = room.state ? bingoModule.projectStateFor(room.state, playerId) : null;
     if (view) {
@@ -74,6 +75,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
 
     if (room.state.phase === 'finished') {
       room.lastWinnerId = room.state.winners[0];
+      manager.recordWin(room);
       room.turnStartedAt = undefined;
       room.turnEndsAt = undefined;
       broadcast(code);

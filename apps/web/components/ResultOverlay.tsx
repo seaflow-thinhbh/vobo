@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import confetti from 'canvas-confetti';
 import type { RoomSnapshot } from '@/lib/types';
 import { registerGsap, prefersReducedMotion, gsap, useGSAP } from '@/lib/motion';
+import { Leaderboard } from './Leaderboard';
 
 registerGsap();
 
@@ -95,6 +96,9 @@ export function ResultOverlay({
           </div>
         </>
       )}
+      <div className="w-56 max-w-full">
+        <Leaderboard roster={snapshot.roster} />
+      </div>
       <div className="mt-2 flex gap-2">
         <button
           type="button"

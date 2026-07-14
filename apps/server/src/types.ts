@@ -20,6 +20,8 @@ export interface Room {
   lastWinnerId?: string; // winner of the previous game (goes first next game)
   rolling?: boolean; // true during the dice-reveal window at game start
   revealDone?: boolean; // whether the reveal already ran for the current game
+  wins: Record<string, number>; // playerId -> games won this room session
+  winRecorded?: boolean; // guard: the current finished game's win was already counted
 }
 
 export type RoomStatus = 'lobby' | 'setup' | 'playing' | 'finished';
@@ -34,6 +36,7 @@ export interface RosterEntry {
   name: string;
   isBot: boolean;
   connected: boolean;
+  wins: number; // games won this room session
 }
 
 /** A joinable room shown in the landing-page room list. */

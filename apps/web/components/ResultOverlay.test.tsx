@@ -12,8 +12,8 @@ function snapshot(winnerId: string, youId: string): RoomSnapshot {
     hostId: 'you',
     status: 'finished',
     roster: [
-      { id: 'you', name: 'Tôi', isBot: false, connected: true },
-      { id: 'p2', name: 'Lan', isBot: false, connected: true },
+      { id: 'you', name: 'Tôi', isBot: false, connected: true, wins: 2 },
+      { id: 'p2', name: 'Lan', isBot: false, connected: true, wins: 1 },
     ],
     turnMs: 20000,
     rolling: false,
@@ -72,5 +72,13 @@ describe('ResultOverlay', () => {
     await user.click(screen.getByRole('button', { name: 'Thoát phòng' }));
     expect(onPlayAgain).toHaveBeenCalledTimes(1);
     expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the win leaderboard', () => {
+    const { container } = render(
+      <ResultOverlay snapshot={snapshot('you', 'you')} onPlayAgain={() => {}} onLeave={() => {}} />,
+    );
+    const rows = [...container.querySelectorAll('[data-leaderboard] [data-player]')];
+    expect(rows.map((r) => r.getAttribute('data-player'))).toEqual(['you', 'p2']); // 2 then 1
   });
 });
