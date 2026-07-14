@@ -10,13 +10,35 @@ const seats: PlayerSeat[] = [
 ];
 
 describe('createInitialState', () => {
-  it('starts in setup phase with empty turn state', () => {
+  it('starts in setup phase with a turn order that is a permutation of the players', () => {
     const s = createInitialState(seats, createRng(1));
     expect(s.phase).toBe('setup');
     expect(s.calledNumbers).toEqual([]);
-    expect(s.turnOrder).toEqual([]);
+    expect([...s.turnOrder].sort()).toEqual(['b1', 'h1']);
     expect(s.currentTurn).toBe(0);
     expect(s.winners).toEqual([]);
+  });
+
+  it('is deterministic for a given seed', () => {
+    expect(createInitialState(seats, createRng(7)).turnOrder).toEqual(
+      createInitialState(seats, createRng(7)).turnOrder,
+    );
+  });
+
+  it('puts firstPlayerId at the front when it is present', () => {
+    const three: PlayerSeat[] = [
+      { id: 'a', name: 'A', isBot: false },
+      { id: 'b', name: 'B', isBot: false },
+      { id: 'c', name: 'C', isBot: false },
+    ];
+    const s = createInitialState(three, createRng(3), { firstPlayerId: 'c' });
+    expect(s.turnOrder[0]).toBe('c');
+    expect([...s.turnOrder].sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('ignores an unknown firstPlayerId (still a valid order)', () => {
+    const s = createInitialState(seats, createRng(3), { firstPlayerId: 'ghost' });
+    expect([...s.turnOrder].sort()).toEqual(['b1', 'h1']);
   });
 
   it('gives bots a valid card and marks them ready; humans start empty and not ready', () => {
