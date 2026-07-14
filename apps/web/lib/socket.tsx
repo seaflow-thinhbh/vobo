@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { RoomSnapshot, Ack, Difficulty } from './types';
+import type { RoomSnapshot, Ack, Difficulty, OpenRoom } from './types';
 
 /**
  * Where the realtime server lives. Priority:
@@ -33,6 +33,10 @@ interface SocketContextValue {
   start: () => Promise<Ok>;
   call: (n: number) => Promise<Ok>;
   leave: () => Promise<Ok>;
+  openRooms: OpenRoom[];
+  subscribeRooms: () => Promise<OpenRoom[]>;
+  unsubscribeRooms: () => Promise<void>;
+  newGame: () => Promise<Ok>;
 }
 
 const Ctx = createContext<SocketContextValue | null>(null);
@@ -55,6 +59,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
+  const [openRooms, setOpenRooms] = useState<OpenRoom[]>([]);
 
   useEffect(() => {
     const socket = io(resolveServerUrl());
@@ -62,6 +67,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('room:state', (s: RoomSnapshot) => setSnapshot(s));
+    socket.on('rooms:list', (rooms: OpenRoom[]) => setOpenRooms(rooms));
     return () => {
       socket.close();
       socketRef.current = null;
@@ -101,6 +107,16 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     start: () => emit('room:start'),
     call: (n) => emit('game:call', { n }),
     leave: () => emit('room:leave'),
+    openRooms,
+    subscribeRooms: async () => {
+      const rooms = await emit<OpenRoom[]>('rooms:subscribe');
+      setOpenRooms(rooms);
+      return rooms;
+    },
+    unsubscribeRooms: async () => {
+      await emit('rooms:unsubscribe');
+    },
+    newGame: () => emit('room:newGame'),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
