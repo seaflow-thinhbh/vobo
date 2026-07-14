@@ -59,6 +59,11 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     }
   }
 
+  const LOBBY = '@lobby';
+  function broadcastRooms(): void {
+    io.to(LOBBY).emit('rooms:list', manager.listOpenRooms());
+  }
+
   /** Drive automated turns (bot moves / turn timeouts) and end-of-game, then broadcast. */
   function orchestrate(code: string): void {
     clearTurnTimer(code);
@@ -103,6 +108,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       void socket.join(code);
       ack({ ok: true, code, playerId, token });
       broadcast(code);
+      broadcastRooms();
     });
 
     socket.on('room:join', ({ code, name }, ack) => {
@@ -114,6 +120,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       void socket.join(code);
       ack({ ok: true, playerId: r.playerId, token: r.token });
       broadcast(code);
+      broadcastRooms();
     });
 
     socket.on('room:resume', ({ code, token }, ack) => {
@@ -140,7 +147,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
       const r = manager.startGame(c.code, c.playerId);
       ack(r.ok ? { ok: true } : r);
-      if (r.ok) orchestrate(c.code);
+      if (r.ok) { orchestrate(c.code); broadcastRooms(); }
     });
 
     socket.on('player:fillCard', ({ card }, ack) => {
@@ -174,9 +181,20 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       ack(r.ok ? { ok: true } : r);
       if (r.ok && !r.roomDeleted) orchestrate(c.code);
       else if (r.ok && r.roomDeleted) clearTurnTimer(c.code);
+      if (r.ok) broadcastRooms();
       void socket.leave(c.code);
       conn.code = undefined;
       conn.playerId = undefined;
+    });
+
+    socket.on('rooms:subscribe', (ack) => {
+      void socket.join(LOBBY);
+      ack(manager.listOpenRooms());
+    });
+
+    socket.on('rooms:unsubscribe', (ack) => {
+      void socket.leave(LOBBY);
+      ack({ ok: true });
     });
 
     socket.on('disconnect', () => {
