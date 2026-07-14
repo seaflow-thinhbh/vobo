@@ -24,6 +24,8 @@ describe('RoomView', () => {
       youId: 'you',
       roster: [{ id: 'you', name: 'An', isBot: false, connected: true }],
       view: null,
+      turnStartedAt: null,
+      turnEndsAt: null,
     };
     render(<RoomView snapshot={snap} actions={actions} />);
     expect(screen.getByText('K7QX9P')).toBeInTheDocument();
@@ -47,6 +49,8 @@ describe('RoomView', () => {
         currentPlayerId: 'you',
         winners: [],
       },
+      turnStartedAt: null,
+      turnEndsAt: null,
     };
     render(<RoomView snapshot={snap} actions={actions} />);
     expect(screen.getByText('Lượt của bạn')).toBeInTheDocument();

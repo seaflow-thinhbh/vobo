@@ -18,6 +18,8 @@ function lobbySnap(rosterLen: number): RoomSnapshot {
       connected: true,
     })),
     view: null,
+    turnStartedAt: null,
+    turnEndsAt: null,
   };
 }
 
@@ -56,6 +58,8 @@ describe('FinishedPanel', () => {
         currentPlayerId: null,
         winners: ['you'],
       },
+      turnStartedAt: null,
+      turnEndsAt: null,
     };
     render(<FinishedPanel snapshot={snap} onLeave={() => {}} />);
     expect(screen.getByText('🎉 Bạn thắng!')).toBeInTheDocument();
