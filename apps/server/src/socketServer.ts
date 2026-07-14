@@ -101,7 +101,17 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       return;
     }
     if (room.rolling) {
+      // Re-entered mid-reveal (e.g. a leave): the shared timer was just cleared at
+      // the top, so re-arm the reveal end or the room would stay stuck rolling.
       broadcast(code);
+      turnTimers.set(
+        code,
+        setTimeout(() => {
+          const r = store.get(code);
+          if (r) r.rolling = false;
+          orchestrate(code);
+        }, cfg.revealMs),
+      );
       return;
     }
 
