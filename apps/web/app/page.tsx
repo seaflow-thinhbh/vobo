@@ -7,7 +7,7 @@ import { RoomList } from '@/components/RoomList';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { createRoom, joinRoom, connected, openRooms, subscribeRooms, unsubscribeRooms } = useSocket();
+  const { createRoom, joinRoom, connected, openRooms, subscribeRooms, unsubscribeRooms, joining } = useSocket();
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -65,10 +65,10 @@ export default function LandingPage() {
       </div>
       <button
         onClick={onCreate}
-        disabled={!connected}
+        disabled={!connected || joining}
         className="mb-4 w-full rounded bg-emerald-600 py-2 font-medium text-white disabled:opacity-40"
       >
-        Tạo phòng
+        {joining ? 'Đang xử lý…' : 'Tạo phòng'}
       </button>
       <div className="flex gap-2">
         <input
@@ -79,7 +79,7 @@ export default function LandingPage() {
         />
         <button
           onClick={() => joinCode(code)}
-          disabled={!connected}
+          disabled={!connected || joining}
           className="rounded bg-sky-600 px-4 font-medium text-white disabled:opacity-40"
         >
           Vào
@@ -89,7 +89,7 @@ export default function LandingPage() {
       {!connected && <p className="mt-3 text-xs text-slate-400">Đang kết nối máy chủ…</p>}
 
       <h2 className="mb-2 mt-6 text-sm font-semibold text-slate-600">Phòng đang chờ</h2>
-      <RoomList rooms={openRooms} onJoin={(c) => joinCode(c)} disabled={!name.trim()} />
+      <RoomList rooms={openRooms} onJoin={(c) => joinCode(c)} disabled={!name.trim() || joining} />
     </main>
   );
 }
