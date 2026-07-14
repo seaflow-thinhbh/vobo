@@ -16,6 +16,10 @@ export interface Room {
   botRng: Rng; // bot decision RNG
   turnStartedAt?: number; // epoch ms when the current turn began (playing only)
   turnEndsAt?: number; // epoch ms deadline for the current turn (playing only)
+  turnMs: number; // this room's per-turn time
+  lastWinnerId?: string; // winner of the previous game (goes first next game)
+  rolling?: boolean; // true during the dice-reveal window at game start
+  revealDone?: boolean; // whether the reveal already ran for the current game
 }
 
 export type RoomStatus = 'lobby' | 'setup' | 'playing' | 'finished';
@@ -55,7 +59,7 @@ export interface RoomSnapshot {
 // ---- Socket payloads & acks ----
 export type Ack<T> = T | { ok: false; code: string; message: string };
 
-export interface CreatePayload { name: string; }
+export interface CreatePayload { name: string; turnMs?: number; }
 export interface JoinPayload { code: string; name: string; }
 export interface ResumePayload { code: string; token: string; }
 export interface AddBotPayload { difficulty: Difficulty; }

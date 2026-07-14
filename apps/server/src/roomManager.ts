@@ -30,6 +30,7 @@ export class RoomManager {
       seats: new Map([[playerId, { token }]]),
       rng: createRng(seed),
       botRng: createRng(seed ^ 0x9e3779b9),
+      turnMs: this.cfg.turnMs,
     };
     this.store.create(room);
     return { code, playerId, token };
