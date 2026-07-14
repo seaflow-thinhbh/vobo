@@ -73,6 +73,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     if (!room || !room.state) { broadcast(code); return; }
 
     if (room.state.phase === 'finished') {
+      room.lastWinnerId = room.state.winners[0];
       room.turnStartedAt = undefined;
       room.turnEndsAt = undefined;
       broadcast(code);

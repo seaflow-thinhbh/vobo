@@ -73,7 +73,11 @@ export class RoomManager {
     if (room.roster.length < this.cfg.minPlayers) {
       return fail('not_enough_players', `Cần ít nhất ${this.cfg.minPlayers} người`);
     }
-    room.state = bingoModule.createInitialState(room.roster, room.rng);
+    room.rolling = false;
+    room.revealDone = false;
+    room.state = bingoModule.createInitialState(room.roster, room.rng, {
+      firstPlayerId: room.lastWinnerId,
+    });
     return { ok: true };
   }
 
