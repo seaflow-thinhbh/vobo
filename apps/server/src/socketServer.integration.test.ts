@@ -5,6 +5,7 @@ import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
 import { InMemoryRoomStore } from './roomStore';
 import { RoomManager } from './roomManager';
 import { attachSocketServer } from './socketServer';
+import { ChatManager } from './chatManager';
 import type { RoomSnapshot } from './types';
 
 const ordered = Array.from({ length: 25 }, (_, i) => i + 1);
@@ -20,7 +21,7 @@ beforeEach(async () => {
   const store = new InMemoryRoomStore();
   // turnMs high so timeouts don't interfere with manual play; botDelay small for the bot game
   const manager = new RoomManager(store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20, disconnectGraceMs: 30_000 });
-  attachSocketServer(io, manager, store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20, disconnectGraceMs: 30_000 });
+  attachSocketServer(io, manager, store, { maxPlayers: 6, minPlayers: 2, turnMs: 60_000, botDelayMs: 5, revealMs: 20, disconnectGraceMs: 30_000 }, new ChatManager());
   await new Promise<void>((resolve) => http.listen(0, resolve));
   port = (http.address() as { port: number }).port;
 });
@@ -43,7 +44,7 @@ async function startTestServer(cfg: { maxPlayers: number; minPlayers: number; tu
   const ioS = new Server(httpS);
   const store = new InMemoryRoomStore();
   const manager = new RoomManager(store, cfg);
-  attachSocketServer(ioS, manager, store, cfg);
+  attachSocketServer(ioS, manager, store, cfg, new ChatManager());
   await new Promise<void>((resolve) => httpS.listen(0, resolve));
   const p = (httpS.address() as { port: number }).port;
   return {
