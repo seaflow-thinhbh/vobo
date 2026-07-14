@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { BINGO_LETTERS, lettersEarned, cardRows, isValidArrangement, randomArrangement } from './bingo';
+import {
+  BINGO_LETTERS,
+  lettersEarned,
+  cardRows,
+  isValidArrangement,
+  randomArrangement,
+  completedLineCells,
+} from './bingo';
 
 describe('bingo helpers', () => {
   it('BINGO_LETTERS is B I N G O', () => {
@@ -31,5 +38,27 @@ describe('bingo helpers', () => {
 
   it('randomArrangement produces a valid arrangement', () => {
     expect(isValidArrangement(randomArrangement())).toBe(true);
+  });
+});
+
+describe('completedLineCells', () => {
+  it('is empty when no line is fully marked', () => {
+    expect(completedLineCells(Array(25).fill(false)).size).toBe(0);
+  });
+
+  it('returns the cells of a completed row', () => {
+    const marked = Array<boolean>(25).fill(false);
+    for (const i of [0, 1, 2, 3, 4]) marked[i] = true;
+    expect([...completedLineCells(marked)].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('unions cells across several completed lines (shared corner counted once)', () => {
+    const marked = Array<boolean>(25).fill(false);
+    // top row (0-4) + left column (0,5,10,15,20) both complete
+    for (const i of [0, 1, 2, 3, 4, 5, 10, 15, 20]) marked[i] = true;
+    const cells = completedLineCells(marked);
+    expect(cells.has(0)).toBe(true); // shared corner
+    expect(cells.has(20)).toBe(true);
+    expect(cells.has(6)).toBe(false); // on neither completed line
   });
 });

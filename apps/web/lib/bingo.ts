@@ -5,6 +5,33 @@ export function lettersEarned(completedLines: number): boolean[] {
   return BINGO_LETTERS.map((_, i) => i < completedLines);
 }
 
+/** The 12 winning lines as index arrays into a 25-cell (5x5, row-major) card. */
+export const LINES: readonly (readonly number[])[] = [
+  [0, 1, 2, 3, 4],
+  [5, 6, 7, 8, 9],
+  [10, 11, 12, 13, 14],
+  [15, 16, 17, 18, 19],
+  [20, 21, 22, 23, 24],
+  [0, 5, 10, 15, 20],
+  [1, 6, 11, 16, 21],
+  [2, 7, 12, 17, 22],
+  [3, 8, 13, 18, 23],
+  [4, 9, 14, 19, 24],
+  [0, 6, 12, 18, 24],
+  [4, 8, 12, 16, 20],
+];
+
+/** Cell indices belonging to at least one fully-marked winning line. */
+export function completedLineCells(marked: boolean[]): Set<number> {
+  const out = new Set<number>();
+  for (const line of LINES) {
+    if (line.every((i) => marked[i])) {
+      for (const i of line) out.add(i);
+    }
+  }
+  return out;
+}
+
 /** Split a 25-cell row-major card into 5 rows of 5. */
 export function cardRows(card: number[]): number[][] {
   const rows: number[][] = [];
