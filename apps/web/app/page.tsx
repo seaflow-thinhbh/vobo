@@ -1,15 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSocket } from '@/lib/socket';
+import { RoomList } from '@/components/RoomList';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { createRoom, joinRoom, connected } = useSocket();
+  const { createRoom, joinRoom, connected, openRooms, subscribeRooms, unsubscribeRooms } = useSocket();
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!connected) return;
+    void subscribeRooms();
+    return () => {
+      void unsubscribeRooms();
+    };
+  }, [connected, subscribeRooms, unsubscribeRooms]);
 
   async function onCreate() {
     if (!name.trim()) return setError('Nhập tên trước đã');
@@ -18,9 +27,9 @@ export default function LandingPage() {
     else setError(r.message);
   }
 
-  async function onJoin() {
+  async function joinCode(raw: string) {
     if (!name.trim()) return setError('Nhập tên trước đã');
-    const c = code.trim().toUpperCase();
+    const c = raw.trim().toUpperCase();
     if (!c) return setError('Nhập mã phòng');
     const r = await joinRoom(c, name.trim());
     if (r.ok) router.push(`/room/${c}`);
@@ -51,7 +60,7 @@ export default function LandingPage() {
           className="w-full rounded border border-slate-300 px-3 py-2 uppercase"
         />
         <button
-          onClick={onJoin}
+          onClick={() => joinCode(code)}
           disabled={!connected}
           className="rounded bg-sky-600 px-4 font-medium text-white disabled:opacity-40"
         >
@@ -60,6 +69,9 @@ export default function LandingPage() {
       </div>
       {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
       {!connected && <p className="mt-3 text-xs text-slate-400">Đang kết nối máy chủ…</p>}
+
+      <h2 className="mb-2 mt-6 text-sm font-semibold text-slate-600">Phòng đang chờ</h2>
+      <RoomList rooms={openRooms} onJoin={(c) => joinCode(c)} disabled={!name.trim()} />
     </main>
   );
 }
