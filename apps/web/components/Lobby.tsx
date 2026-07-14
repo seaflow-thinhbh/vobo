@@ -21,7 +21,7 @@ export function Lobby({
         <div className="text-xs text-slate-500">Mã phòng</div>
         <div className="text-3xl font-bold tracking-widest">{snapshot.code}</div>
       </div>
-      <ul className="mb-3 divide-y rounded border">
+      <ul data-roster className="mb-3 divide-y rounded border">
         {snapshot.roster.map((p) => (
           <li key={p.id} className="flex items-center gap-2 px-3 py-2">
             <span className={`h-2 w-2 rounded-full ${p.connected ? 'bg-emerald-500' : 'bg-slate-300'}`} />

@@ -31,7 +31,7 @@ describe('Lobby', () => {
     const { container } = render(<Lobby snapshot={lobbySnap(2)} isHost onAddBot={() => {}} onStart={onStart} />);
     expect(screen.getByText('K7QX9P')).toBeInTheDocument();
     // scope to the roster list — the name also appears in the leaderboard below
-    expect(within(container.querySelector('ul')!).getByText('An')).toBeInTheDocument();
+    expect(within(container.querySelector('[data-roster]')!).getByText('An')).toBeInTheDocument();
     const start = screen.getByRole('button', { name: 'Bắt đầu' });
     expect(start).toBeEnabled();
     await user.click(start);
