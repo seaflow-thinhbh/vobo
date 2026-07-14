@@ -22,11 +22,11 @@ describe('PlayerCarousel', () => {
     expect(screen.getByText(/P2/)).toBeInTheDocument();
   });
 
-  it('shows only 3 tiles with the current player when there are more than 3', () => {
+  it('renders every player and marks the current one (which the track centres)', () => {
     const { container } = render(
       <PlayerCarousel players={players(5)} currentPlayerId="p2" youId="p0" turnStartedAt={null} turnEndsAt={null} />,
     );
-    expect(container.querySelectorAll('[data-player]')).toHaveLength(3);
+    expect(container.querySelectorAll('[data-player]')).toHaveLength(5);
     const current = container.querySelector('[data-current="true"]')!;
     expect(current.getAttribute('data-player')).toBe('p2');
   });

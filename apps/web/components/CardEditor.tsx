@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { isValidArrangement, randomArrangement } from '@/lib/bingo';
+import { isValidArrangement, randomArrangement, duplicateCells } from '@/lib/bingo';
 
 export function CardEditor({
   onSubmit,
@@ -12,6 +12,7 @@ export function CardEditor({
 }) {
   const [cells, setCells] = useState<(number | null)[]>(() => Array(25).fill(null));
   const valid = isValidArrangement(cells);
+  const dups = duplicateCells(cells);
 
   function setCell(i: number, raw: string): void {
     const n = raw === '' ? null : Number(raw);
@@ -28,13 +29,16 @@ export function CardEditor({
           <input
             key={i}
             aria-label={`Ô ${i + 1}`}
+            data-duplicate={dups[i] ? 'true' : 'false'}
             type="number"
             min={1}
             max={25}
             value={c ?? ''}
             onChange={(e) => setCell(i, e.target.value)}
             disabled={disabled}
-            className="h-12 w-full rounded border border-slate-300 text-center text-lg"
+            className={`h-12 w-full rounded border text-center text-lg ${
+              dups[i] ? 'border-red-500 bg-red-100 text-red-700' : 'border-slate-300'
+            }`}
           />
         ))}
       </div>

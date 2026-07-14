@@ -1,8 +1,9 @@
 export interface RoomConfig {
   maxPlayers: number;
   minPlayers: number;
-  turnMs: number; // per-turn timeout; auto-calls a random number when it expires
+  turnMs: number; // default per-turn timeout when a room doesn't pick one
   botDelayMs: number; // delay before a bot plays its turn (feels human)
+  revealMs: number; // "rolling" dice-reveal window before the first turn of a game
 }
 
 export const DEFAULT_CONFIG: RoomConfig = {
@@ -10,4 +11,8 @@ export const DEFAULT_CONFIG: RoomConfig = {
   minPlayers: 2,
   turnMs: 20_000,
   botDelayMs: 1_200,
+  revealMs: 1_500,
 };
+
+/** Turn-time choices offered when creating a room (ms). */
+export const TURN_PRESETS_MS = [15_000, 20_000, 30_000, 45_000, 60_000];
