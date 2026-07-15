@@ -17,6 +17,7 @@ function twoHumanSetup(): BingoState {
     calledNumbers: [],
     winners: [],
     skipNext: false,
+    bombPenalties: {},
   };
 }
 

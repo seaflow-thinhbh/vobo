@@ -49,5 +49,6 @@ export function createInitialState(
     calledNumbers: [],
     winners: [],
     skipNext: false,
+    bombPenalties: {},
   };
 }

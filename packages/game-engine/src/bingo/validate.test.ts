@@ -17,6 +17,7 @@ function setupState(): BingoState {
     calledNumbers: [],
     winners: [],
     skipNext: false,
+    bombPenalties: {},
   };
 }
 
@@ -33,6 +34,7 @@ function playingState(): BingoState {
     calledNumbers: [7],
     winners: [],
     skipNext: false,
+    bombPenalties: {},
   };
 }
 

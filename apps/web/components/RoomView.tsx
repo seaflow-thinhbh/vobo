@@ -13,6 +13,7 @@ import { ChatPanel } from './ChatPanel';
 import { Leaderboard } from './Leaderboard';
 import { InteractionEffect } from './InteractionEffect';
 import { InteractionBar } from './InteractionBar';
+import { BombExplosion } from './BombExplosion';
 
 export interface RoomActions {
   addBot: (d: Difficulty) => Promise<unknown>;
@@ -34,11 +35,15 @@ export function RoomView({
   actions,
   messages,
   interactions,
+  bombTriggered,
+  clearBombTriggered,
 }: {
   snapshot: RoomSnapshot;
   actions: RoomActions;
   messages: ChatMessage[];
   interactions: InteractionEvent[];
+  bombTriggered: { callerId: string; callerName: string; number: number } | null;
+  clearBombTriggered: () => void;
 }) {
   const isHost = snapshot.hostId === snapshot.youId;
   const gridSize = snapshot.gridSize || 5;
@@ -198,6 +203,13 @@ export function RoomView({
       )}
       {chat}
       {interactionBar}
+      {bombTriggered && (
+        <BombExplosion
+          callerName={bombTriggered.callerName}
+          number={bombTriggered.number}
+          onDone={clearBombTriggered}
+        />
+      )}
       {activeEffects.map((ev, i) => (
         <InteractionEffect key={`${ev.fromId}-${ev.type}-${i}`} event={ev} youId={snapshot.youId} onDone={() => removeEffect(ev)} />
       ))}

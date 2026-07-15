@@ -19,6 +19,7 @@ function viewFor(called: number[], completedLines = 0) {
     calledNumbers: called,
     winners: [],
     skipNext: false,
+    bombPenalties: {},
   };
   return projectStateFor(s, 'bot');
 }

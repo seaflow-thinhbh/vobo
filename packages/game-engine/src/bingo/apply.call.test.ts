@@ -19,6 +19,7 @@ function nearWinState(): BingoState {
     calledNumbers: [1, 2, 3, 4],
     winners: [],
     skipNext: false,
+    bombPenalties: {},
   };
 }
 
@@ -63,6 +64,7 @@ describe('winner resolution (caller-priority)', () => {
       calledNumbers: called,
       winners: [],
       skipNext: false,
+      bombPenalties: {},
     };
   }
 
@@ -88,6 +90,7 @@ describe('winner resolution (caller-priority)', () => {
       calledNumbers: called,
       winners: [],
       skipNext: false,
+      bombPenalties: {},
     };
     const s = applyMove(state, 'a', { type: 'CallNumber', n: 21 });
     expect(s.phase).toBe('finished');

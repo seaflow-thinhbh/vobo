@@ -6,6 +6,8 @@ export function projectStateFor(state: BingoState, playerId: string): BingoView 
   if (!you) throw new Error(`player ${playerId} not in state`);
 
   const called = new Set(state.calledNumbers);
+  const penaltySet = new Set(state.bombPenalties[playerId] ?? []);
+  const filteredCalled = new Set([...called].filter((n) => !penaltySet.has(n)));
   const opponents = state.players
     .filter((p) => p.id !== playerId)
     .map((p) => ({
@@ -23,7 +25,7 @@ export function projectStateFor(state: BingoState, playerId: string): BingoView 
     you: {
       id: you.id,
       card: [...you.card],
-      marked: markedMask(you.card, called),
+      marked: markedMask(you.card, filteredCalled),
       completedLines: you.completedLines,
       ready: you.ready,
       bombNumber: you.bombNumber,

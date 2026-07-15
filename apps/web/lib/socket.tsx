@@ -4,6 +4,12 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { io, type Socket } from 'socket.io-client';
 import type { RoomSnapshot, Ack, Difficulty, OpenRoom, ChatMessage, InteractionEvent } from './types';
 
+interface BombTriggeredEvent {
+  callerId: string;
+  callerName: string;
+  number: number;
+}
+
 /**
  * Where the realtime server lives. Priority:
  *  1. NEXT_PUBLIC_SERVER_URL (explicit override, e.g. production).
@@ -44,6 +50,8 @@ interface SocketContextValue {
   sendInteraction: (targetPlayerId: string, type: string) => Promise<Ok>;
   messages: ChatMessage[];
   interactions: InteractionEvent[];
+  bombTriggered: BombTriggeredEvent | null;
+  clearBombTriggered: () => void;
   joining: boolean;
 }
 
@@ -70,6 +78,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [openRooms, setOpenRooms] = useState<OpenRoom[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [interactions, setInteractions] = useState<InteractionEvent[]>([]);
+  const [bombTriggered, setBombTriggered] = useState<BombTriggeredEvent | null>(null);
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
@@ -89,6 +98,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
     socket.on('interaction:receive', (ev: InteractionEvent) => {
       setInteractions((prev) => [...prev.slice(-49), ev]);
+    });
+    socket.on('bomb:triggered', (ev: BombTriggeredEvent) => {
+      setBombTriggered(ev);
     });
     return () => {
       socket.close();
@@ -150,6 +162,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     sendInteraction: (targetPlayerId, type) => emit('interaction:send', { targetPlayerId, type }),
     messages,
     interactions,
+    bombTriggered,
+    clearBombTriggered: () => setBombTriggered(null),
     joining,
   };
 
