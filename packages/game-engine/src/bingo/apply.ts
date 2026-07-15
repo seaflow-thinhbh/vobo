@@ -52,18 +52,22 @@ function callNumber(state: BingoState, callerId: string, n: number): BingoState 
 
   let currentTurn: number;
   let skipNext = false;
+  let bombPenalties = state.bombPenalties;
   if (state.skipNext) {
-    // Previous bomb penalty: skip this caller completely + next player
     currentTurn = (state.currentTurn + 2) % state.turnOrder.length;
   } else if (bombHit) {
-    // Caller stepped on a bomb: advance +1 for their turn, +1 for penalty
     currentTurn = (state.currentTurn + 2) % state.turnOrder.length;
     skipNext = true;
+    // Record penalty: caller's number is NOT marked for them
+    bombPenalties = {
+      ...state.bombPenalties,
+      [callerId]: [...(state.bombPenalties[callerId] ?? []), n],
+    };
   } else {
     currentTurn = (state.currentTurn + 1) % state.turnOrder.length;
   }
 
-  return { ...state, calledNumbers, players, currentTurn, skipNext };
+  return { ...state, calledNumbers, players, currentTurn, skipNext, bombPenalties };
 }
 
 function placeBomb(state: BingoState, playerId: string, n: number): BingoState {

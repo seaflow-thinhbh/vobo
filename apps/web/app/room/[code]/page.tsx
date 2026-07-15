@@ -56,7 +56,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   return (
     <main className="p-4">
-      <RoomView snapshot={s.snapshot} actions={actions} messages={s.messages} interactions={s.interactions} />
+      <RoomView snapshot={s.snapshot} actions={actions} messages={s.messages} interactions={s.interactions} bombTriggered={s.bombTriggered} clearBombTriggered={s.clearBombTriggered} />
     </main>
   );
 }

@@ -127,4 +127,5 @@ export interface ServerToClientEvents {
   'kicked': (p: { reason: string }) => void;
   'chat:message': (msg: ChatMessage) => void;
   'interaction:receive': (ev: InteractionEvent) => void;
+  'bomb:triggered': (ev: { callerId: string; callerName: string; number: number }) => void;
 }

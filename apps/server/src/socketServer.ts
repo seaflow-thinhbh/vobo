@@ -223,9 +223,29 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       const c = requireConn();
       if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
       if (store.get(c.code)?.rolling) return ack({ ok: false, code: 'rolling', message: 'Đang chọn lượt đi đầu' });
+
+      // Check bomb before applying
+      const roomBefore = store.get(c.code);
+      const bombHit = roomBefore?.state?.players.some(
+        (p) => p.id !== c.playerId && p.bombNumber === n,
+      );
+
       const r = manager.callNumber(c.code, c.playerId, n);
       ack(r.ok ? { ok: true } : r);
-      if (r.ok) orchestrate(c.code);
+      if (r.ok) {
+        if (bombHit) {
+          const caller = roomBefore?.state?.players.find((p) => p.id === c.playerId);
+          io.to(c.code).emit('bomb:triggered', {
+            callerId: c.playerId,
+            callerName: caller?.name ?? '?',
+            number: n,
+          });
+          // Small delay for explosion animation before advancing
+          setTimeout(() => orchestrate(c.code), 1500);
+        } else {
+          orchestrate(c.code);
+        }
+      }
     });
 
     socket.on('room:leave', (ack) => {

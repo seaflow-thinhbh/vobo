@@ -24,6 +24,7 @@ export interface BingoState {
   calledNumbers: number[]; // in call order
   winners: string[]; // exactly one id when finished
   skipNext: boolean; // when true, next player is skipped (bomb penalty)
+  bombPenalties: Record<string, number[]>; // playerId -> called numbers that are NOT marked for them
 }
 
 export type BingoMove =
