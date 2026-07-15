@@ -3,18 +3,21 @@ import { bingoModule } from '@vobo/game-engine';
 import type { RoomManager } from './roomManager';
 import type { RoomStore } from './roomStore';
 import type { RoomConfig } from './config';
+import { ChatManager } from './chatManager';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
   Room,
   RoomSnapshot,
   RosterEntry,
+  Ack,
+  OkAck,
 } from './types';
 
 type Io = Server<ClientToServerEvents, ServerToClientEvents>;
 type Sock = Socket<ClientToServerEvents, ServerToClientEvents>;
 
-export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStore, cfg: RoomConfig): void {
+export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStore, cfg: RoomConfig, chat: ChatManager): void {
   const turnTimers = new Map<string, NodeJS.Timeout>();
 
   function clearTurnTimer(code: string): void {
@@ -51,6 +54,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       turnEndsAt: room.state?.phase === 'playing' ? (room.turnEndsAt ?? null) : null,
       turnMs: room.turnMs,
       rolling: room.state?.phase === 'playing' ? (room.rolling ?? false) : false,
+      replayVotes: room.replayVotes ? [...room.replayVotes] : [],
     };
   }
 
@@ -167,6 +171,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       conn.code = code;
       conn.playerId = r.playerId;
       manager.attachSocket(code, r.playerId, socket.id);
+      manager.cancelDisconnectTimer(code, r.playerId);
       void socket.join(code);
       ack({ ok: true, playerId: r.playerId });
       broadcast(code);
@@ -226,6 +231,23 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       conn.playerId = undefined;
     });
 
+    socket.on('room:kick', ({ targetPlayerId }, ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      const room = store.get(c.code);
+      const targetSocketId = room?.seats.get(targetPlayerId)?.socketId;
+      manager.cancelDisconnectTimer(c.code, targetPlayerId);
+      const r = manager.kickPlayer(c.code, c.playerId, targetPlayerId);
+      ack(r.ok ? { ok: true } : { ok: false, code: r.code, message: r.message } as Ack<OkAck>);
+      if (r.ok) {
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('kicked', { reason: 'Bạn đã bị đá khỏi phòng' });
+        }
+        broadcast(c.code);
+        broadcastRooms();
+      }
+    });
+
     socket.on('room:newGame', (ack) => {
       const c = requireConn();
       if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
@@ -235,6 +257,36 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
         orchestrate(c.code); // pushes the lobby snapshot to everyone
         broadcastRooms(); // the room is joinable again
       }
+    });
+
+    socket.on('room:readyToReplay', (ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      const r = manager.voteReplay(c.code, c.playerId);
+      ack(r.ok ? { ok: true } : { ok: false, code: r.code, message: r.message } as Ack<OkAck>);
+      if (r.ok) {
+        if (r.allReady) {
+          orchestrate(c.code);
+          broadcastRooms();
+        } else {
+          broadcast(c.code);
+        }
+      }
+    });
+
+    socket.on('chat:send', ({ text }, ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      if (!text || !text.trim()) {
+        return ack({ ok: false, code: 'empty_text', message: 'Tin nhắn trống' });
+      }
+      const room = store.get(c.code);
+      const player = room?.roster.find((p) => p.id === c.playerId)
+        ?? room?.state?.players.find((p: { id: string }) => p.id === c.playerId);
+      const name = player?.name ?? '?';
+      const msg = chat.addMessage(c.code, c.playerId, name, text.trim());
+      io.to(c.code).emit('chat:message', msg);
+      ack({ ok: true });
     });
 
     socket.on('rooms:subscribe', (ack) => {
@@ -252,8 +304,25 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       if (!c) return;
       manager.markDisconnected(c.code, c.playerId);
       broadcast(c.code);
-      // Turn timeouts continue to auto-call for a disconnected player's turns;
-      // on resume they reclaim the seat. (No separate takeover timer — see plan.)
+
+      const room = store.get(c.code);
+      if (!room) return;
+      if (!room.disconnectTimers) room.disconnectTimers = new Map();
+      const existing = room.disconnectTimers.get(c.playerId);
+      if (existing) clearTimeout(existing);
+      const timer = setTimeout(() => {
+        const currentRoom = store.get(c.code);
+        if (!currentRoom) return;
+        const seat = currentRoom.seats.get(c.playerId);
+        if (seat && !seat.socketId) {
+          const r = manager.leave(c.code, c.playerId);
+          if (r.ok && !r.roomDeleted) orchestrate(c.code);
+          else if (r.ok && r.roomDeleted) clearTurnTimer(c.code);
+          if (r.ok) broadcastRooms();
+        }
+        currentRoom.disconnectTimers?.delete(c.playerId);
+      }, cfg.disconnectGraceMs);
+      room.disconnectTimers.set(c.playerId, timer);
     });
   });
 }

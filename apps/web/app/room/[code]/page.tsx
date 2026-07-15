@@ -41,6 +41,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     ready: s.ready,
     call: s.call,
     newGame: s.newGame,
+    kickPlayer: s.kickPlayer,
+    readyToReplay: s.readyToReplay,
+    sendChat: s.sendChat,
     leave: async () => {
       const r = await s.leave();
       s.clearSnapshot();
@@ -51,7 +54,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   return (
     <main className="p-4">
-      <RoomView snapshot={s.snapshot} actions={actions} />
+      <RoomView snapshot={s.snapshot} actions={actions} messages={s.messages} />
     </main>
   );
 }

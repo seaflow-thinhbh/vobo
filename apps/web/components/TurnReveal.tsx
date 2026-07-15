@@ -66,14 +66,14 @@ export function TurnReveal({
             data-chip={i}
             data-highlight={i === highlight ? 'true' : 'false'}
             className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              i === highlight ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-700'
+              i === highlight ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'
             }`}
           >
             {p.name}
           </div>
         ))}
       </div>
-      {first && <p className="text-sm text-slate-600">Đi đầu: {first.name}</p>}
+      {first && <p className="text-sm text-slate-400">Đi đầu: {first.name}</p>}
     </div>
   );
 }

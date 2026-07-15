@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { RoomSnapshot, Ack, Difficulty, OpenRoom } from './types';
+import type { RoomSnapshot, Ack, Difficulty, OpenRoom, ChatMessage } from './types';
 
 /**
  * Where the realtime server lives. Priority:
@@ -37,6 +37,11 @@ interface SocketContextValue {
   subscribeRooms: () => Promise<OpenRoom[]>;
   unsubscribeRooms: () => Promise<void>;
   newGame: () => Promise<Ok>;
+  kickPlayer: (targetPlayerId: string) => Promise<Ok>;
+  readyToReplay: () => Promise<Ok>;
+  sendChat: (text: string) => Promise<Ok>;
+  messages: ChatMessage[];
+  joining: boolean;
 }
 
 const Ctx = createContext<SocketContextValue | null>(null);
@@ -60,6 +65,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
   const [openRooms, setOpenRooms] = useState<OpenRoom[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     const socket = io(resolveServerUrl());
@@ -68,6 +75,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socket.on('disconnect', () => setConnected(false));
     socket.on('room:state', (s: RoomSnapshot) => setSnapshot(s));
     socket.on('rooms:list', (rooms: OpenRoom[]) => setOpenRooms(rooms));
+    socket.on('chat:message', (msg: ChatMessage) => {
+      setMessages((prev) => [...prev.slice(-99), msg]);
+    });
+    socket.on('kicked', () => {
+      setSnapshot(null);
+      setMessages([]);
+      window.location.href = '/';
+    });
     return () => {
       socket.close();
       socketRef.current = null;
@@ -89,14 +104,18 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const value: SocketContextValue = {
     connected,
     snapshot,
-    clearSnapshot: () => setSnapshot(null),
+    clearSnapshot: () => { setSnapshot(null); setMessages([]); },
     createRoom: async (name, turnMs) => {
+      setJoining(true);
       const r = await emit<Ack<{ code: string; playerId: string; token: string }>>('room:create', { name, turnMs });
+      setJoining(false);
       if (r.ok) saveToken(r.code, r.token);
       return r;
     },
     joinRoom: async (code, name) => {
+      setJoining(true);
       const r = await emit<Ack<{ playerId: string; token: string }>>('room:join', { code, name });
+      setJoining(false);
       if (r.ok) saveToken(code, r.token);
       return r;
     },
@@ -117,6 +136,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       await emit('rooms:unsubscribe');
     },
     newGame: () => emit('room:newGame'),
+    kickPlayer: (targetPlayerId) => emit('room:kick', { targetPlayerId }),
+    readyToReplay: () => emit('room:readyToReplay'),
+    sendChat: (text) => emit('chat:send', { text }),
+    messages,
+    joining,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

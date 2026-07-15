@@ -4,6 +4,7 @@ import { InMemoryRoomStore } from './roomStore';
 import { RoomManager } from './roomManager';
 import { attachSocketServer } from './socketServer';
 import { DEFAULT_CONFIG } from './config';
+import { ChatManager } from './chatManager';
 import type { ClientToServerEvents, ServerToClientEvents } from './types';
 
 export interface RunningServer {
@@ -39,7 +40,8 @@ export async function startServer(port = Number(process.env.PORT ?? 3001)): Prom
   });
   const store = new InMemoryRoomStore();
   const manager = new RoomManager(store, DEFAULT_CONFIG);
-  attachSocketServer(io, manager, store, DEFAULT_CONFIG);
+  const chat = new ChatManager();
+  attachSocketServer(io, manager, store, DEFAULT_CONFIG, chat);
 
   await new Promise<void>((resolve) => http.listen(port, resolve));
   const actualPort = (http.address() as { port: number }).port;

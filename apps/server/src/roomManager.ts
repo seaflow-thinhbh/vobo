@@ -66,6 +66,20 @@ export class RoomManager {
     return { ok: true };
   }
 
+  kickPlayer(code: string, hostId: string, targetPlayerId: string): OpResult {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    if (room.hostId !== hostId) return fail('not_host', 'Chỉ chủ phòng mới có quyền đá');
+    if (room.state) return fail('already_started', 'Không thể đá khi ván đã bắt đầu');
+    if (hostId === targetPlayerId) return fail('cannot_kick_self', 'Không thể tự đá chính mình');
+    const target = room.roster.find((p) => p.id === targetPlayerId);
+    if (!target) return fail('no_player', 'Người chơi không tồn tại');
+    if (target.isBot) return fail('no_player', 'Không thể đá bot');
+    room.roster = room.roster.filter((p) => p.id !== targetPlayerId);
+    room.seats.delete(targetPlayerId);
+    return { ok: true };
+  }
+
   startGame(code: string, hostId: string): OpResult {
     const room = this.store.get(code);
     if (!room) return fail('no_room', 'Không tìm thấy phòng');
@@ -146,6 +160,13 @@ export class RoomManager {
     if (seat) seat.socketId = socketId;
   }
 
+  cancelDisconnectTimer(code: string, playerId: string): void {
+    const room = this.store.get(code);
+    if (!room?.disconnectTimers) return;
+    const t = room.disconnectTimers.get(playerId);
+    if (t) { clearTimeout(t); room.disconnectTimers.delete(playerId); }
+  }
+
   markDisconnected(code: string, playerId: string): void {
     const seat = this.store.get(code)?.seats.get(playerId);
     if (seat) seat.socketId = undefined;
@@ -155,7 +176,10 @@ export class RoomManager {
     const room = this.store.get(code);
     if (!room) return fail('no_room', 'Không tìm thấy phòng');
     for (const [playerId, seat] of room.seats) {
-      if (seat.token === token) return { ok: true, playerId };
+      if (seat.token === token) {
+        this.cancelDisconnectTimer(code, playerId);
+        return { ok: true, playerId };
+      }
     }
     return fail('bad_token', 'Phiên không hợp lệ');
   }
@@ -231,9 +255,28 @@ export class RoomManager {
       .filter((p) => room.seats.has(p.id) || p.id.startsWith('bot_'))
       .map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, botDifficulty: p.botDifficulty }));
     room.state = undefined;
+    room.replayVotes = undefined;
     room.turnStartedAt = undefined;
     room.turnEndsAt = undefined;
     return { ok: true };
+  }
+
+  voteReplay(code: string, playerId: string): OpResult<{ allReady: boolean }> {
+    const room = this.store.get(code);
+    if (!room) return fail('no_room', 'Không tìm thấy phòng');
+    if (!room.state || room.state.phase !== 'finished') {
+      return fail('not_finished', 'Ván chưa kết thúc');
+    }
+    if (!room.seats.has(playerId)) return fail('not_player', 'Bạn không ở trong phòng');
+    if (!room.replayVotes) room.replayVotes = new Set();
+    if (room.replayVotes.has(playerId)) return { ok: true, allReady: false };
+    room.replayVotes.add(playerId);
+    const allReady = room.replayVotes.size >= room.seats.size;
+    if (allReady) {
+      room.replayVotes = undefined;
+      this.returnToLobby(code, playerId);
+    }
+    return { ok: true, allReady };
   }
 }
 
