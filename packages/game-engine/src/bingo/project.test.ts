@@ -6,6 +6,7 @@ const ordered = Array.from({ length: 25 }, (_, i) => i + 1);
 
 function state(): BingoState {
   return {
+    gridSize: 5,
     phase: 'playing',
     players: [
       { id: 'a', name: 'A', isBot: false, card: ordered, ready: true, completedLines: 1, connected: true },

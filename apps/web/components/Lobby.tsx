@@ -22,6 +22,9 @@ export function Lobby({
       <div className="mb-3 text-center">
         <div className="text-xs text-slate-400">Mã phòng</div>
         <div className="text-3xl font-bold tracking-widest">{snapshot.code}</div>
+        <div className="mt-1 text-xs text-slate-500">
+          Chế độ: {snapshot.gridSize || 5}x{snapshot.gridSize || 5}
+        </div>
       </div>
       <ul data-roster className="mb-3 divide-y divide-slate-700 rounded border border-slate-600">
         {snapshot.roster.map((p) => (

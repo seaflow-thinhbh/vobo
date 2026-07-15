@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import type { BingoView } from '@/lib/types';
-import { lettersEarned, BINGO_LETTERS, completedLineCells } from '@/lib/bingo';
+import { lettersEarned, getBingoLetters, completedLineCells } from '@/lib/bingo';
 import { usePrevious } from '@/lib/usePrevious';
 import { registerGsap, prefersReducedMotion, gsap, useGSAP } from '@/lib/motion';
 
@@ -17,8 +17,10 @@ export function GameBoard({
   isYourTurn?: boolean;
   onCall?: (n: number) => void;
 }) {
-  const letters = lettersEarned(view.you.completedLines);
-  const completed = completedLineCells(view.you.marked);
+  const gs = view.gridSize || 5;
+  const letters = lettersEarned(view.you.completedLines, gs);
+  const bingoLetters = getBingoLetters(gs);
+  const completed = completedLineCells(view.you.marked, gs);
   const container = useRef<HTMLDivElement>(null);
 
   const prevMarked = usePrevious(view.you.marked);
@@ -30,7 +32,6 @@ export function GameBoard({
       const root = container.current;
       if (!root) return;
 
-      // Newly-marked cells → scale-bounce.
       if (prevMarked) {
         view.you.marked.forEach((m, i) => {
           if (m && !prevMarked[i]) {
@@ -42,7 +43,6 @@ export function GameBoard({
         });
       }
 
-      // Newly-completed line cells → staggered flash cascade.
       if (prevCompleted) {
         const fresh = [...completed]
           .filter((i) => !prevCompleted.has(i))
@@ -62,16 +62,18 @@ export function GameBoard({
     { dependencies: [view.you.marked], scope: container },
   );
 
+  const gridColsClass = gs === 5 ? 'grid-cols-5' : gs === 6 ? 'grid-cols-6' : 'grid-cols-7';
+
   return (
     <div ref={container} className="mx-auto w-full max-w-md">
-      <div className="mb-2 flex justify-center gap-3 text-xl">
-        {BINGO_LETTERS.map((L, i) => (
-          <span key={L} className={letters[i] ? 'font-bold text-emerald-500' : 'text-slate-600'}>
+      <div className="mb-2 flex justify-center gap-2 text-lg md:text-xl">
+        {bingoLetters.map((L, i) => (
+          <span key={`${L}-${i}`} className={letters[i] ? 'font-bold text-emerald-500' : 'text-slate-600'}>
             {L}
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-5 gap-1">
+      <div className={`grid gap-1 ${gridColsClass}`}>
         {view.you.card.map((n, idx) => {
           const marked = view.you.marked[idx] === true;
           const inLine = completed.has(idx);
@@ -85,7 +87,9 @@ export function GameBoard({
               data-line={inLine ? 'true' : 'false'}
               disabled={!callable}
               onClick={() => callable && onCall(n)}
-              className={`flex aspect-square items-center justify-center rounded border text-lg font-medium ${
+              className={`flex aspect-square items-center justify-center rounded border font-medium ${
+                gs >= 6 ? 'text-base' : 'text-lg'
+              } ${
                 inLine
                   ? 'border-emerald-500 bg-emerald-500 font-bold text-white'
                   : marked

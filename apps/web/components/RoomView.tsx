@@ -1,6 +1,7 @@
 'use client';
 
-import type { RoomSnapshot, Difficulty, ChatMessage } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import type { RoomSnapshot, Difficulty, ChatMessage, InteractionEvent, InteractionType } from '@/lib/types';
 import { Lobby } from './Lobby';
 import { CardEditor } from './CardEditor';
 import { GameBoard } from './GameBoard';
@@ -10,6 +11,7 @@ import { ResultOverlay } from './ResultOverlay';
 import { TurnReveal } from './TurnReveal';
 import { ChatPanel } from './ChatPanel';
 import { Leaderboard } from './Leaderboard';
+import { InteractionEffect } from './InteractionEffect';
 
 export interface RoomActions {
   addBot: (d: Difficulty) => Promise<unknown>;
@@ -22,18 +24,35 @@ export interface RoomActions {
   kickPlayer: (targetPlayerId: string) => Promise<unknown>;
   readyToReplay: () => Promise<unknown>;
   sendChat: (text: string) => Promise<unknown>;
+  sendInteraction: (targetPlayerId: string, type: InteractionType) => Promise<unknown>;
 }
 
 export function RoomView({
   snapshot,
   actions,
   messages,
+  interactions,
 }: {
   snapshot: RoomSnapshot;
   actions: RoomActions;
   messages: ChatMessage[];
+  interactions: InteractionEvent[];
 }) {
   const isHost = snapshot.hostId === snapshot.youId;
+  const gridSize = snapshot.gridSize || 5;
+
+  const [activeEffects, setActiveEffects] = useState<InteractionEvent[]>([]);
+
+  useEffect(() => {
+    if (interactions.length === 0) return;
+    const latest = interactions[interactions.length - 1];
+    if (!latest) return;
+    setActiveEffects((prev) => [...prev, latest]);
+  }, [interactions]);
+
+  function removeEffect(ev: InteractionEvent) {
+    setActiveEffects((prev) => prev.filter((e) => e !== ev));
+  }
 
   const backButton = (
     <div className="mb-3 flex items-center gap-2">
@@ -65,7 +84,6 @@ export function RoomView({
   const view = snapshot.view;
   if (!view) return <p className="text-center text-slate-400">Đang tải…</p>;
 
-  // Build ready status for setup phase
   let readyList: { id: string; name: string; ready: boolean }[] | null = null;
   if (snapshot.status === 'setup') {
     const youName = snapshot.roster.find((r) => r.id === snapshot.youId)?.name ?? 'Bạn';
@@ -76,7 +94,7 @@ export function RoomView({
   }
 
   const sidebar = (
-    <div className="fixed left-4 top-20 z-30 w-44">
+    <div className="hidden md:block fixed left-4 top-20 z-30 w-44">
       <Leaderboard roster={snapshot.roster} />
       {readyList && (
         <div className="mt-3 rounded border border-slate-600/60 bg-slate-800/95 p-2 text-xs backdrop-blur">
@@ -92,6 +110,19 @@ export function RoomView({
         </div>
       )}
     </div>
+  );
+
+  const carousel = (
+    <PlayerCarousel
+      players={snapshot.roster}
+      currentPlayerId={view.currentPlayerId}
+      youId={snapshot.youId}
+      turnStartedAt={snapshot.turnStartedAt}
+      turnEndsAt={snapshot.turnEndsAt}
+      onInteract={(targetId, type) => {
+        void actions.sendInteraction(targetId, type);
+      }}
+    />
   );
 
   if (snapshot.status === 'setup') {
@@ -110,6 +141,7 @@ export function RoomView({
         {backButton}
         {sidebar}
         <CardEditor
+          gridSize={gridSize}
           onSubmit={async (card) => {
             const r = (await actions.fillCard(card)) as { ok?: boolean } | undefined;
             if (r?.ok !== false) await actions.ready();
@@ -125,14 +157,8 @@ export function RoomView({
       <>
         {backButton}
         {sidebar}
-        <div className="mx-auto max-w-md">
-          <PlayerCarousel
-            players={snapshot.roster}
-            currentPlayerId={view.currentPlayerId}
-            youId={snapshot.youId}
-            turnStartedAt={snapshot.turnStartedAt}
-            turnEndsAt={snapshot.turnEndsAt}
-          />
+        <div className="mx-auto max-w-md px-2">
+          {carousel}
           <ResultCelebration snapshot={snapshot} />
           <div className="flex justify-center">
             <GameBoard view={view} />
@@ -140,11 +166,13 @@ export function RoomView({
           <ResultOverlay snapshot={snapshot} onPlayAgain={actions.readyToReplay} onLeave={actions.leave} />
         </div>
         {chat}
+        {activeEffects.map((ev, i) => (
+          <InteractionEffect key={`${ev.fromId}-${ev.type}-${i}`} event={ev} youId={snapshot.youId} onDone={() => removeEffect(ev)} />
+        ))}
       </>
     );
   }
 
-  // playing
   return (
     <>
       {backButton}
@@ -152,18 +180,15 @@ export function RoomView({
       {snapshot.rolling ? (
         <TurnReveal players={snapshot.roster} firstPlayerId={view.currentPlayerId} />
       ) : (
-        <div className="mx-auto flex max-w-md flex-col gap-3">
-          <PlayerCarousel
-            players={snapshot.roster}
-            currentPlayerId={view.currentPlayerId}
-            youId={snapshot.youId}
-            turnStartedAt={snapshot.turnStartedAt}
-            turnEndsAt={snapshot.turnEndsAt}
-          />
+        <div className="mx-auto flex w-full max-w-md flex-col gap-3 px-2">
+          {carousel}
           <GameBoard view={view} isYourTurn={view.currentPlayerId === snapshot.youId} onCall={actions.call} />
         </div>
       )}
       {chat}
+      {activeEffects.map((ev, i) => (
+        <InteractionEffect key={`${ev.fromId}-${ev.type}-${i}`} event={ev} youId={snapshot.youId} onDone={() => removeEffect(ev)} />
+      ))}
     </>
   );
 }

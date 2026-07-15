@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  BINGO_LETTERS,
+  getBingoLetters,
   lettersEarned,
   cardRows,
   isValidArrangement,
@@ -10,8 +10,12 @@ import {
 } from './bingo';
 
 describe('bingo helpers', () => {
-  it('BINGO_LETTERS is B I N G O', () => {
-    expect([...BINGO_LETTERS]).toEqual(['B', 'I', 'N', 'G', 'O']);
+  it('getBingoLetters returns B I N G O for size 5', () => {
+    expect(getBingoLetters(5)).toEqual(['B', 'I', 'N', 'G', 'O']);
+  });
+
+  it('getBingoLetters returns B I N G O O for size 6', () => {
+    expect(getBingoLetters(6)).toEqual(['B', 'I', 'N', 'G', 'O', 'O']);
   });
 
   it('lettersEarned reflects completed line count', () => {

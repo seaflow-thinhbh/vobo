@@ -27,6 +27,7 @@ export interface OpponentView {
 }
 
 export interface BingoView {
+  gridSize: number;
   phase: 'setup' | 'playing' | 'finished';
   you: {
     id: string;
@@ -53,6 +54,7 @@ export interface RoomSnapshot {
   turnMs: number;
   rolling: boolean;
   replayVotes: string[];
+  gridSize: number;
 }
 
 export interface OpenRoom {
@@ -60,6 +62,16 @@ export interface OpenRoom {
   hostName: string;
   playerCount: number;
   maxPlayers: number;
+  gridSize: number;
 }
 
 export type Ack<T> = ({ ok: true } & T) | { ok: false; code: string; message: string };
+
+export type InteractionType = 'tomato' | 'flower' | 'brick' | 'smoke' | 'chicken' | 'hurry' | 'young' | 'fire' | 'heart' | 'laugh' | 'angry' | 'like' | 'clap';
+
+export interface InteractionEvent {
+  fromId: string;
+  fromName: string;
+  targetId: string;
+  type: InteractionType;
+}

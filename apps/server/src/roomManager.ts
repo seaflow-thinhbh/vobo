@@ -1,5 +1,5 @@
 import { bingoModule, createRng } from '@vobo/game-engine';
-import type { Difficulty, BingoPlayer } from '@vobo/game-engine';
+import type { Difficulty, BingoPlayer, GridSize } from '@vobo/game-engine';
 import type { RoomConfig } from './config';
 import { TURN_PRESETS_MS } from './config';
 import type { OpResult, OpenRoom, Room } from './types';
@@ -11,6 +11,16 @@ function fail(code: string, message: string): { ok: false; code: string; message
   return { ok: false, code, message };
 }
 
+function dedupName(name: string, existing: string[]): string {
+  let candidate = name;
+  let counter = 2;
+  while (existing.includes(candidate)) {
+    candidate = `${name} (${counter})`;
+    counter++;
+  }
+  return candidate;
+}
+
 export class RoomManager {
   constructor(
     private store: RoomStore,
@@ -18,15 +28,17 @@ export class RoomManager {
     private rand: () => number = Math.random,
   ) {}
 
-  createRoom(name: string, turnMs?: number): { code: string; playerId: string; token: string } {
+  createRoom(name: string, turnMs?: number, gridSize?: GridSize): { code: string; playerId: string; token: string } {
     const code = generateRoomCode(this.rand, (c) => this.store.has(c));
     const playerId = generatePlayerId();
     const token = generateToken();
     const seed = Math.floor(this.rand() * 0x7fffffff);
+    const gs: GridSize = gridSize != null && [5, 6, 7].includes(gridSize) ? gridSize : 5;
     const room: Room = {
       code,
       hostId: playerId,
       gameId: 'bingo',
+      gridSize: gs,
       roster: [{ id: playerId, name, isBot: false }],
       seats: new Map([[playerId, { token }]]),
       rng: createRng(seed),
@@ -38,16 +50,25 @@ export class RoomManager {
     return { code, playerId, token };
   }
 
-  joinRoom(code: string, name: string): OpResult<{ playerId: string; token: string }> {
+  joinRoom(code: string, name: string): OpResult<{ playerId: string; token: string; nameChanged?: boolean; newName?: string }> {
     const room = this.store.get(code);
     if (!room) return fail('no_room', 'Không tìm thấy phòng');
     if (room.state) return fail('already_started', 'Ván đã bắt đầu');
     if (room.roster.length >= this.cfg.maxPlayers) return fail('room_full', 'Phòng đã đầy');
+
+    const existingNames = room.roster.map((p) => p.name);
+    let finalName = name;
+    let nameChanged = false;
+    if (existingNames.includes(name)) {
+      finalName = dedupName(name, existingNames);
+      nameChanged = true;
+    }
+
     const playerId = generatePlayerId();
     const token = generateToken();
-    room.roster.push({ id: playerId, name, isBot: false });
+    room.roster.push({ id: playerId, name: finalName, isBot: false });
     room.seats.set(playerId, { token });
-    return { ok: true, playerId, token };
+    return { ok: true, playerId, token, ...(nameChanged ? { nameChanged: true, newName: finalName } : {}) };
   }
 
   addBot(code: string, hostId: string, difficulty: Difficulty): OpResult {
@@ -93,6 +114,7 @@ export class RoomManager {
     room.winRecorded = false;
     room.state = bingoModule.createInitialState(room.roster, room.rng, {
       firstPlayerId: room.lastWinnerId,
+      gridSize: room.gridSize,
     });
     return { ok: true };
   }
@@ -148,7 +170,8 @@ export class RoomManager {
     if (!room || !room.state) return fail('no_game', 'Ván chưa bắt đầu');
     const cur = this.currentPlayer(room);
     if (!cur) return fail('not_playing', 'Không ở lượt chơi');
-    const uncalled = uncalledNumbers(room.state.calledNumbers);
+    const maxN = room.state.gridSize * room.state.gridSize;
+    const uncalled = uncalledNumbers(room.state.calledNumbers, maxN);
     if (uncalled.length === 0) return fail('no_numbers', 'Hết số để hô');
     const n = uncalled[room.botRng.int(uncalled.length)]!;
     room.state = bingoModule.applyMove(room.state, cur.id, { type: 'CallNumber', n });
@@ -193,11 +216,11 @@ export class RoomManager {
       room.roster = room.roster.filter((p) => p.id !== playerId);
     } else {
       // in-game: convert the seat to a bot so the game keeps going.
-      // Safe in-place mutation: bingoModule.applyMove always rebuilds player
-      // objects via spread, so this current-state object isn't shared with any
-      // prior/emitted snapshot.
       const p = room.state.players.find((x) => x.id === playerId);
-      if (p) p.isBot = true;
+      if (p) {
+        p.isBot = true;
+        if (!p.name.endsWith(' (Bot)')) p.name = p.name + ' (Bot)';
+      }
     }
     room.seats.delete(playerId);
 
@@ -227,6 +250,7 @@ export class RoomManager {
         hostName: host?.name ?? '?',
         playerCount: room.roster.length,
         maxPlayers: this.cfg.maxPlayers,
+        gridSize: room.gridSize,
       });
     }
     return out;
@@ -280,9 +304,9 @@ export class RoomManager {
   }
 }
 
-function uncalledNumbers(called: number[]): number[] {
+function uncalledNumbers(called: number[], maxN: number): number[] {
   const set = new Set(called);
   const out: number[] = [];
-  for (let n = 1; n <= 25; n++) if (!set.has(n)) out.push(n);
+  for (let n = 1; n <= maxN; n++) if (!set.has(n)) out.push(n);
   return out;
 }

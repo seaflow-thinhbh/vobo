@@ -1,7 +1,9 @@
 'use client';
 
-import type { RosterEntry } from '@/lib/types';
+import { useState, useCallback, useRef } from 'react';
+import type { RosterEntry, InteractionType } from '@/lib/types';
 import { TurnRing } from './TurnRing';
+import { InteractionMenu } from './InteractionMenu';
 
 export function PlayerCarousel({
   players,
@@ -9,24 +11,46 @@ export function PlayerCarousel({
   youId,
   turnStartedAt,
   turnEndsAt,
+  onInteract,
 }: {
   players: RosterEntry[];
   currentPlayerId: string | null;
   youId: string;
   turnStartedAt: number | null;
   turnEndsAt: number | null;
+  onInteract?: (targetId: string, type: InteractionType, all: boolean) => void;
 }) {
   const idx = players.findIndex((p) => p.id === currentPlayerId);
   const currentIndex = idx >= 0 ? idx : 0;
   const n = Math.max(1, players.length);
 
-  // Show 3 tiles across the container width and slide the whole track so the
-  // current player's tile is always centred. translateX is a % of the track's
-  // own width; the maths keeps tile `currentIndex` at the container centre and
-  // the CSS transition animates the move whenever the turn changes.
   const trackWidthPct = (n / 3) * 100;
   const tileWidthPct = 100 / n;
   const shiftPct = ((1 - currentIndex) / n) * 100;
+
+  const [menu, setMenu] = useState<{ x: number; y: number; targetId: string } | null>(null);
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleContextMenu(e: React.MouseEvent, playerId: string) {
+    if (playerId === youId) return;
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY, targetId: playerId });
+  }
+
+  function handleTouchStart(e: React.TouchEvent, playerId: string) {
+    if (playerId === youId) return;
+    longPressRef.current = setTimeout(() => {
+      const t = e.touches[0];
+      if (t) setMenu({ x: t.clientX, y: t.clientY, targetId: playerId });
+    }, 500);
+  }
+
+  function handleTouchEnd() {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  }
 
   return (
     <div className="w-full overflow-hidden">
@@ -41,7 +65,11 @@ export function PlayerCarousel({
               <div
                 data-player={p.id}
                 data-current={isCurrent ? 'true' : 'false'}
-                className={`relative px-2 py-3 text-center text-sm font-semibold transition-transform duration-300 ${
+                onContextMenu={(e) => handleContextMenu(e, p.id)}
+                onTouchStart={(e) => handleTouchStart(e, p.id)}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchEnd}
+                className={`relative cursor-pointer select-none px-2 py-3 text-center text-sm font-semibold transition-transform duration-300 ${
                   isCurrent ? 'bg-slate-800' : 'scale-90 border border-slate-600 bg-slate-700 opacity-60'
                 }`}
               >
@@ -62,6 +90,19 @@ export function PlayerCarousel({
           );
         })}
       </div>
+
+      {menu && onInteract && (
+        <InteractionMenu
+          x={menu.x}
+          y={menu.y}
+          showAll={players.length > 2}
+          onSelect={(type, all) => {
+            onInteract(all ? '*' : menu.targetId, type, all);
+            setMenu(null);
+          }}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   );
 }

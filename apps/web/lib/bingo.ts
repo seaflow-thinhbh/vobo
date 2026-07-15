@@ -1,30 +1,42 @@
-export const BINGO_LETTERS = ['B', 'I', 'N', 'G', 'O'] as const;
-
-/** Which of the five B-I-N-G-O letters are earned for a given completed-line count. */
-export function lettersEarned(completedLines: number): boolean[] {
-  return BINGO_LETTERS.map((_, i) => i < completedLines);
+export function getBingoLetters(gridSize: number): string[] {
+  const base = ['B', 'I', 'N', 'G', 'O'];
+  if (gridSize <= 5) return base;
+  return [...base, ...Array(gridSize - 5).fill('O')];
 }
 
-/** The 12 winning lines as index arrays into a 25-cell (5x5, row-major) card. */
-export const LINES: readonly (readonly number[])[] = [
-  [0, 1, 2, 3, 4],
-  [5, 6, 7, 8, 9],
-  [10, 11, 12, 13, 14],
-  [15, 16, 17, 18, 19],
-  [20, 21, 22, 23, 24],
-  [0, 5, 10, 15, 20],
-  [1, 6, 11, 16, 21],
-  [2, 7, 12, 17, 22],
-  [3, 8, 13, 18, 23],
-  [4, 9, 14, 19, 24],
-  [0, 6, 12, 18, 24],
-  [4, 8, 12, 16, 20],
-];
+export function lettersEarned(completedLines: number, gridSize: number = 5): boolean[] {
+  const letters = getBingoLetters(gridSize);
+  return letters.map((_, i) => i < completedLines);
+}
 
-/** Cell indices belonging to at least one fully-marked winning line. */
-export function completedLineCells(marked: boolean[]): Set<number> {
+export function getWinningLines(gridSize: number): number[][] {
+  const N = gridSize;
+  const lines: number[][] = [];
+  for (let r = 0; r < N; r++) {
+    const row: number[] = [];
+    for (let c = 0; c < N; c++) row.push(r * N + c);
+    lines.push(row);
+  }
+  for (let c = 0; c < N; c++) {
+    const col: number[] = [];
+    for (let r = 0; r < N; r++) col.push(r * N + c);
+    lines.push(col);
+  }
+  const diag1: number[] = [];
+  for (let i = 0; i < N; i++) diag1.push(i * N + i);
+  lines.push(diag1);
+  const diag2: number[] = [];
+  for (let i = 0; i < N; i++) diag2.push(i * N + (N - 1 - i));
+  lines.push(diag2);
+  return lines;
+}
+
+export const LINES: readonly (readonly number[])[] = getWinningLines(5).map((l) => [...l]);
+
+export function completedLineCells(marked: boolean[], gridSize: number = 5): Set<number> {
   const out = new Set<number>();
-  for (const line of LINES) {
+  const lines = getWinningLines(gridSize);
+  for (const line of lines) {
     if (line.every((i) => marked[i])) {
       for (const i of line) out.add(i);
     }
@@ -32,25 +44,23 @@ export function completedLineCells(marked: boolean[]): Set<number> {
   return out;
 }
 
-/** Split a 25-cell row-major card into 5 rows of 5. */
-export function cardRows(card: number[]): number[][] {
+export function cardRows(card: number[], gridSize: number = 5): number[][] {
   const rows: number[][] = [];
-  for (let r = 0; r < 5; r++) rows.push(card.slice(r * 5, r * 5 + 5));
+  for (let r = 0; r < gridSize; r++) rows.push(card.slice(r * gridSize, r * gridSize + gridSize));
   return rows;
 }
 
-/** True when cells is a full permutation of 1..25 (no nulls, no dupes). */
-export function isValidArrangement(cells: (number | null)[]): boolean {
-  if (cells.length !== 25) return false;
+export function isValidArrangement(cells: (number | null)[], gridSize: number = 5): boolean {
+  const total = gridSize * gridSize;
+  if (cells.length !== total) return false;
   const seen = new Set<number>();
   for (const c of cells) {
-    if (c == null || !Number.isInteger(c) || c < 1 || c > 25 || seen.has(c)) return false;
+    if (c == null || !Number.isInteger(c) || c < 1 || c > total || seen.has(c)) return false;
     seen.add(c);
   }
   return true;
 }
 
-/** For each cell, true if its (non-null) value also appears in another cell. */
 export function duplicateCells(cells: (number | null)[]): boolean[] {
   const counts = new Map<number, number>();
   for (const c of cells) {
@@ -59,9 +69,9 @@ export function duplicateCells(cells: (number | null)[]): boolean[] {
   return cells.map((c) => c != null && (counts.get(c) ?? 0) > 1);
 }
 
-/** A random shuffle of 1..25 for the "Xếp ngẫu nhiên" button (client-side, cosmetic). */
-export function randomArrangement(): number[] {
-  const a = Array.from({ length: 25 }, (_, i) => i + 1);
+export function randomArrangement(gridSize: number = 5): number[] {
+  const total = gridSize * gridSize;
+  const a = Array.from({ length: total }, (_, i) => i + 1);
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = a[i]!;

@@ -12,6 +12,7 @@ export default function LandingPage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [turnSec, setTurnSec] = useState(20);
+  const [gridSize, setGridSize] = useState<number>(5);
 
   useEffect(() => {
     if (!connected) return;
@@ -23,7 +24,7 @@ export default function LandingPage() {
 
   async function onCreate() {
     if (!name.trim()) return setError('Nhập tên trước đã');
-    const r = await createRoom(name.trim(), turnSec * 1000);
+    const r = await createRoom(name.trim(), turnSec * 1000, gridSize);
     if (r.ok) router.push(`/room/${r.code}`);
     else setError(r.message);
   }
@@ -33,8 +34,10 @@ export default function LandingPage() {
     const c = raw.trim().toUpperCase();
     if (!c) return setError('Nhập mã phòng');
     const r = await joinRoom(c, name.trim());
-    if (r.ok) router.push(`/room/${c}`);
-    else setError(r.message);
+    if (r.ok) {
+      if (r.nameChanged) setError(`Tên "${name.trim()}" bị trùng, đã đổi thành "${r.newName}"`);
+      router.push(`/room/${c}`);
+    } else setError(r.message);
   }
 
   return (
@@ -46,6 +49,23 @@ export default function LandingPage() {
         placeholder="Tên hiển thị"
         className="mb-3 w-full rounded border border-slate-600 bg-slate-800 px-3 py-2 text-slate-100 placeholder:text-slate-500"
       />
+      <div className="mb-3">
+        <div className="mb-1 text-xs text-slate-400">Chế độ</div>
+        <div className="flex gap-1">
+          {[5, 6, 7].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setGridSize(s)}
+              className={`flex-1 rounded py-1.5 text-sm font-medium ${
+                gridSize === s ? 'bg-sky-700 text-white' : 'bg-slate-700 text-slate-300'
+              }`}
+            >
+              {s}x{s}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="mb-3">
         <div className="mb-1 text-xs text-slate-400">Thời gian mỗi lượt</div>
         <div className="flex gap-1">

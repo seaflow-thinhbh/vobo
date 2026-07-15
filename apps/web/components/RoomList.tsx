@@ -21,6 +21,9 @@ export function RoomList({
           <span className="flex-1 truncate">
             Phòng của <b>{r.hostName}</b>
           </span>
+          <span className="rounded bg-slate-700 px-1.5 py-0.5 text-xs text-slate-300">
+            {r.gridSize || 5}x{r.gridSize || 5}
+          </span>
           <span className="text-slate-400">
             {r.playerCount}/{r.maxPlayers}
           </span>
