@@ -33,5 +33,18 @@ export function validateMove(state: BingoState, playerId: string, move: BingoMov
       if (state.calledNumbers.includes(move.n))
         return { ok: false, code: 'already_called', message: 'Số này đã được hô' };
       return { ok: true };
+
+    case 'PlaceBomb':
+      if (state.phase !== 'playing')
+        return { ok: false, code: 'bad_phase', message: 'Chỉ đặt bomb trong lúc chơi' };
+      if (player.bombNumber !== null)
+        return { ok: false, code: 'already_bombed', message: 'Bạn đã đặt bomb rồi' };
+      if (!Number.isInteger(move.n) || move.n < 1 || move.n > maxNumber)
+        return { ok: false, code: 'bad_number', message: `Số phải trong 1–${maxNumber}` };
+      if (!player.card.includes(move.n))
+        return { ok: false, code: 'not_on_card', message: 'Số này không có trên vé của bạn' };
+      if (state.calledNumbers.includes(move.n))
+        return { ok: false, code: 'already_called', message: 'Số này đã được hô, không thể đặt bomb' };
+      return { ok: true };
   }
 }

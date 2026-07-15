@@ -11,13 +11,14 @@ function viewFor(called: number[], completedLines = 0) {
     gridSize: 5,
     phase: 'playing',
     players: [
-      { id: 'bot', name: 'Bot', isBot: true, card: ordered, ready: true, completedLines, connected: true },
-      { id: 'x', name: 'X', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true },
+      { id: 'bot', name: 'Bot', isBot: true, card: ordered, ready: true, completedLines, connected: true, bombNumber: null },
+      { id: 'x', name: 'X', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true, bombNumber: null },
     ],
     turnOrder: ['bot', 'x'],
     currentTurn: 0,
     calledNumbers: called,
     winners: [],
+    skipNext: false,
   };
   return projectStateFor(s, 'bot');
 }

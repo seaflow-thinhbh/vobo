@@ -10,6 +10,8 @@ export function applyMove(state: BingoState, playerId: string, move: BingoMove):
       return setReady(state, playerId);
     case 'CallNumber':
       return callNumber(state, playerId, move.n);
+    case 'PlaceBomb':
+      return placeBomb(state, playerId, move.n);
   }
 }
 
@@ -45,8 +47,32 @@ function callNumber(state: BingoState, callerId: string, n: number): BingoState 
     return { ...state, calledNumbers, players, phase: 'finished', winners: [winnerId] };
   }
 
-  const currentTurn = (state.currentTurn + 1) % state.turnOrder.length;
-  return { ...state, calledNumbers, players, currentTurn };
+  // Check bomb: does any player have a bomb on this number (and is NOT the caller)?
+  const bombHit = players.some((p) => p.id !== callerId && p.bombNumber === n);
+
+  let currentTurn: number;
+  let skipNext = false;
+  if (state.skipNext) {
+    // Previous bomb penalty: skip this caller completely + next player
+    currentTurn = (state.currentTurn + 2) % state.turnOrder.length;
+  } else if (bombHit) {
+    // Caller stepped on a bomb: advance +1 for their turn, +1 for penalty
+    currentTurn = (state.currentTurn + 2) % state.turnOrder.length;
+    skipNext = true;
+  } else {
+    currentTurn = (state.currentTurn + 1) % state.turnOrder.length;
+  }
+
+  return { ...state, calledNumbers, players, currentTurn, skipNext };
+}
+
+function placeBomb(state: BingoState, playerId: string, n: number): BingoState {
+  return {
+    ...state,
+    players: state.players.map((p) =>
+      p.id === playerId ? { ...p, bombNumber: n } : p,
+    ),
+  };
 }
 
 /**

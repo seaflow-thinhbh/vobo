@@ -9,13 +9,14 @@ function state(): BingoState {
     gridSize: 5,
     phase: 'playing',
     players: [
-      { id: 'a', name: 'A', isBot: false, card: ordered, ready: true, completedLines: 1, connected: true },
-      { id: 'b', name: 'B', isBot: true, botDifficulty: 'hard', card: ordered, ready: true, completedLines: 2, connected: true },
+      { id: 'a', name: 'A', isBot: false, card: ordered, ready: true, completedLines: 1, connected: true, bombNumber: null },
+      { id: 'b', name: 'B', isBot: true, botDifficulty: 'hard', card: ordered, ready: true, completedLines: 2, connected: true, bombNumber: null },
     ],
     turnOrder: ['a', 'b'],
     currentTurn: 0,
     calledNumbers: [1, 2, 3],
     winners: [],
+    skipNext: false,
   };
 }
 

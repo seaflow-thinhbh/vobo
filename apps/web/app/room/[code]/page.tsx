@@ -38,6 +38,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     addBot: s.addBot,
     start: s.start,
     fillCard: s.fillCard,
+    placeBomb: s.placeBomb,
     ready: s.ready,
     call: s.call,
     newGame: s.newGame,

@@ -9,13 +9,14 @@ function twoHumanSetup(): BingoState {
     gridSize: 5,
     phase: 'setup',
     players: [
-      { id: 'a', name: 'A', isBot: false, card: [], ready: false, completedLines: 0, connected: true },
-      { id: 'b', name: 'B', isBot: false, card: [], ready: false, completedLines: 0, connected: true },
+      { id: 'a', name: 'A', isBot: false, card: [], ready: false, completedLines: 0, connected: true, bombNumber: null },
+      { id: 'b', name: 'B', isBot: false, card: [], ready: false, completedLines: 0, connected: true, bombNumber: null },
     ],
     turnOrder: [],
     currentTurn: 0,
     calledNumbers: [],
     winners: [],
+    skipNext: false,
   };
 }
 

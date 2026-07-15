@@ -28,17 +28,20 @@ export class RoomManager {
     private rand: () => number = Math.random,
   ) {}
 
-  createRoom(name: string, turnMs?: number, gridSize?: GridSize): { code: string; playerId: string; token: string } {
+  createRoom(name: string, turnMs?: number, gridSize?: GridSize, gameMode?: 'fun' | 'casual', bombsEnabled?: boolean): { code: string; playerId: string; token: string } {
     const code = generateRoomCode(this.rand, (c) => this.store.has(c));
     const playerId = generatePlayerId();
     const token = generateToken();
     const seed = Math.floor(this.rand() * 0x7fffffff);
     const gs: GridSize = gridSize != null && [5, 6, 7].includes(gridSize) ? gridSize : 5;
+    const mode: 'fun' | 'casual' = gameMode === 'casual' ? 'casual' : 'fun';
     const room: Room = {
       code,
       hostId: playerId,
       gameId: 'bingo',
       gridSize: gs,
+      gameMode: mode,
+      bombsEnabled: mode === 'fun' ? true : (bombsEnabled ?? false),
       roster: [{ id: playerId, name, isBot: false }],
       seats: new Map([[playerId, { token }]]),
       rng: createRng(seed),
@@ -164,18 +167,17 @@ export class RoomManager {
     return { ok: true };
   }
 
-  /** Call a random legal number for the current player (turn-timeout / disconnected). */
-  autoCall(code: string): OpResult {
+  /** Skip the current player's turn (timeout penalty). */
+  skipTurn(code: string): OpResult {
     const room = this.store.get(code);
     if (!room || !room.state) return fail('no_game', 'Ván chưa bắt đầu');
-    const cur = this.currentPlayer(room);
-    if (!cur) return fail('not_playing', 'Không ở lượt chơi');
-    const maxN = room.state.gridSize * room.state.gridSize;
-    const uncalled = uncalledNumbers(room.state.calledNumbers, maxN);
-    if (uncalled.length === 0) return fail('no_numbers', 'Hết số để hô');
-    const n = uncalled[room.botRng.int(uncalled.length)]!;
-    room.state = bingoModule.applyMove(room.state, cur.id, { type: 'CallNumber', n });
+    if (room.state.phase !== 'playing') return fail('not_playing', 'Không ở lượt chơi');
+    room.state = { ...room.state, currentTurn: (room.state.currentTurn + 1) % room.state.turnOrder.length };
     return { ok: true };
+  }
+
+  placeBomb(code: string, playerId: string, n: number): OpResult {
+    return this.applyGameMove(code, playerId, { type: 'PlaceBomb', n });
   }
 
   attachSocket(code: string, playerId: string, socketId: string): void {
@@ -251,6 +253,7 @@ export class RoomManager {
         playerCount: room.roster.length,
         maxPlayers: this.cfg.maxPlayers,
         gridSize: room.gridSize,
+        gameMode: room.gameMode,
       });
     }
     return out;
