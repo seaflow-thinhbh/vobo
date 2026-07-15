@@ -1,19 +1,21 @@
 import type { Difficulty } from '../types';
 
 export type GamePhase = 'setup' | 'playing' | 'finished';
+export type GridSize = 5 | 6 | 7;
 
 export interface BingoPlayer {
   id: string;
   name: string;
   isBot: boolean;
   botDifficulty?: Difficulty;
-  card: number[]; // length 25 once filled; [] before filling
+  card: number[]; // length gridSize*gridSize once filled; [] before filling
   ready: boolean;
-  completedLines: number; // 0..5
+  completedLines: number; // 0..gridSize
   connected: boolean;
 }
 
 export interface BingoState {
+  gridSize: GridSize;
   phase: GamePhase;
   players: BingoPlayer[];
   turnOrder: string[]; // player ids, calling order
@@ -28,11 +30,12 @@ export type BingoMove =
   | { type: 'CallNumber'; n: number };
 
 export interface BingoView {
+  gridSize: GridSize;
   phase: GamePhase;
   you: {
     id: string;
     card: number[];
-    marked: boolean[]; // length 25, aligned with card
+    marked: boolean[]; // length gridSize*gridSize, aligned with card
     completedLines: number;
     ready: boolean;
   };

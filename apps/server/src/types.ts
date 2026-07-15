@@ -1,4 +1,4 @@
-import type { BingoState, BingoView, PlayerSeat, Rng, Difficulty } from '@vobo/game-engine';
+import type { BingoState, BingoView, PlayerSeat, Rng, Difficulty, GridSize } from '@vobo/game-engine';
 
 export interface Seat {
   token: string;
@@ -17,6 +17,7 @@ export interface Room {
   code: string;
   hostId: string;
   gameId: 'bingo';
+  gridSize: GridSize; // room's grid mode (5, 6, or 7)
   roster: PlayerSeat[]; // lobby roster; frozen into `state` when the game starts
   state?: BingoState; // engine state, created on start
   seats: Map<string, Seat>; // playerId -> auth/connection (HUMANS only; bots have no seat)
@@ -55,6 +56,7 @@ export interface OpenRoom {
   hostName: string;
   playerCount: number;
   maxPlayers: number;
+  gridSize: number; // e.g. 5, 6, 7
 }
 
 /** Per-player snapshot pushed to a client after any change. */
@@ -70,12 +72,13 @@ export interface RoomSnapshot {
   turnMs: number; // this room's per-turn time
   rolling: boolean; // true during the dice-reveal window
   replayVotes: string[]; // danh sách người chơi đã bình chọn chơi lại
+  gridSize: number; // room's grid mode
 }
 
 // ---- Socket payloads & acks ----
 export type Ack<T> = T | { ok: false; code: string; message: string };
 
-export interface CreatePayload { name: string; turnMs?: number; }
+export interface CreatePayload { name: string; turnMs?: number; gridSize?: number; }
 export interface JoinPayload { code: string; name: string; }
 export interface ResumePayload { code: string; token: string; }
 export interface AddBotPayload { difficulty: Difficulty; }
@@ -83,9 +86,14 @@ export interface FillCardPayload { card: number[]; }
 export interface CallPayload { n: number; }
 
 export interface CreateAck { ok: true; code: string; playerId: string; token: string; }
-export interface JoinAck { ok: true; playerId: string; token: string; }
+export interface JoinAck { ok: true; playerId: string; token: string; nameChanged?: boolean; newName?: string; }
 export interface ResumeAck { ok: true; playerId: string; }
 export interface OkAck { ok: true; }
+
+export type InteractionType = 'tomato' | 'flower' | 'brick' | 'smoke' | 'chicken' | 'hurry' | 'young' | 'fire' | 'heart' | 'laugh' | 'angry' | 'like' | 'clap';
+
+export interface InteractionPayload { targetPlayerId: string; type: InteractionType; }
+export interface InteractionEvent { fromId: string; fromName: string; targetId: string; type: InteractionType; }
 
 export interface ClientToServerEvents {
   'room:create': (p: CreatePayload, ack: (r: Ack<CreateAck>) => void) => void;
@@ -103,6 +111,7 @@ export interface ClientToServerEvents {
   'room:kick': (p: { targetPlayerId: string }, ack: (r: Ack<OkAck>) => void) => void;
   'room:readyToReplay': (ack: (r: Ack<OkAck>) => void) => void;
   'chat:send': (p: { text: string }, ack: (r: Ack<OkAck>) => void) => void;
+  'interaction:send': (p: InteractionPayload, ack: (r: Ack<OkAck>) => void) => void;
 }
 
 export interface ServerToClientEvents {
@@ -112,4 +121,5 @@ export interface ServerToClientEvents {
   'rooms:list': (rooms: OpenRoom[]) => void;
   'kicked': (p: { reason: string }) => void;
   'chat:message': (msg: ChatMessage) => void;
+  'interaction:receive': (ev: InteractionEvent) => void;
 }

@@ -1,18 +1,31 @@
-/** The 12 winning lines as index arrays into a 25-cell (5x5, row-major) card. */
-export const LINES: readonly (readonly number[])[] = [
-  // rows
-  [0, 1, 2, 3, 4],
-  [5, 6, 7, 8, 9],
-  [10, 11, 12, 13, 14],
-  [15, 16, 17, 18, 19],
-  [20, 21, 22, 23, 24],
-  // columns
-  [0, 5, 10, 15, 20],
-  [1, 6, 11, 16, 21],
-  [2, 7, 12, 17, 22],
-  [3, 8, 13, 18, 23],
-  [4, 9, 14, 19, 24],
-  // diagonals
-  [0, 6, 12, 18, 24],
-  [4, 8, 12, 16, 20],
-];
+import type { GridSize } from './types';
+
+export function getWinningLines(gridSize: GridSize): number[][] {
+  const N = gridSize;
+  const lines: number[][] = [];
+
+  for (let r = 0; r < N; r++) {
+    const row: number[] = [];
+    for (let c = 0; c < N; c++) row.push(r * N + c);
+    lines.push(row);
+  }
+
+  for (let c = 0; c < N; c++) {
+    const col: number[] = [];
+    for (let r = 0; r < N; r++) col.push(r * N + c);
+    lines.push(col);
+  }
+
+  const diag1: number[] = [];
+  for (let i = 0; i < N; i++) diag1.push(i * N + i);
+  lines.push(diag1);
+
+  const diag2: number[] = [];
+  for (let i = 0; i < N; i++) diag2.push(i * N + (N - 1 - i));
+  lines.push(diag2);
+
+  return lines;
+}
+
+/** Pre-computed 5x5 lines for backward compatibility and default. */
+export const LINES: readonly (readonly number[])[] = getWinningLines(5).map((l) => [...l]);

@@ -18,6 +18,7 @@ export function projectStateFor(state: BingoState, playerId: string): BingoView 
     }));
 
   return {
+    gridSize: state.gridSize,
     phase: state.phase,
     you: {
       id: you.id,

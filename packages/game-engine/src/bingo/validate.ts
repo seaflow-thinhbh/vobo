@@ -6,18 +6,20 @@ export function validateMove(state: BingoState, playerId: string, move: BingoMov
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return { ok: false, code: 'no_player', message: 'Không tìm thấy người chơi' };
 
+  const maxNumber = state.gridSize * state.gridSize;
+
   switch (move.type) {
     case 'FillCard':
       if (state.phase !== 'setup')
         return { ok: false, code: 'bad_phase', message: 'Chỉ điền vé ở giai đoạn setup' };
-      if (!isValidCard(move.card))
-        return { ok: false, code: 'invalid_card', message: 'Vé phải gồm đủ số 1–25, không trùng' };
+      if (!isValidCard(move.card, state.gridSize))
+        return { ok: false, code: 'invalid_card', message: `Vé phải gồm đủ số 1–${maxNumber}, không trùng` };
       return { ok: true };
 
     case 'SetReady':
       if (state.phase !== 'setup')
         return { ok: false, code: 'bad_phase', message: 'Chỉ sẵn sàng ở giai đoạn setup' };
-      if (!isValidCard(player.card))
+      if (!isValidCard(player.card, state.gridSize))
         return { ok: false, code: 'card_incomplete', message: 'Phải điền vé hợp lệ trước' };
       return { ok: true };
 
@@ -26,8 +28,8 @@ export function validateMove(state: BingoState, playerId: string, move: BingoMov
         return { ok: false, code: 'bad_phase', message: 'Chưa tới lượt chơi' };
       if (state.turnOrder[state.currentTurn] !== playerId)
         return { ok: false, code: 'not_your_turn', message: 'Chưa tới lượt bạn' };
-      if (!Number.isInteger(move.n) || move.n < 1 || move.n > 25)
-        return { ok: false, code: 'bad_number', message: 'Số phải trong 1–25' };
+      if (!Number.isInteger(move.n) || move.n < 1 || move.n > maxNumber)
+        return { ok: false, code: 'bad_number', message: `Số phải trong 1–${maxNumber}` };
       if (state.calledNumbers.includes(move.n))
         return { ok: false, code: 'already_called', message: 'Số này đã được hô' };
       return { ok: true };

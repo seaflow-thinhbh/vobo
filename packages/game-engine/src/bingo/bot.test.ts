@@ -8,6 +8,7 @@ const ordered = Array.from({ length: 25 }, (_, i) => i + 1);
 
 function viewFor(called: number[], completedLines = 0) {
   const s: BingoState = {
+    gridSize: 5,
     phase: 'playing',
     players: [
       { id: 'bot', name: 'Bot', isBot: true, card: ordered, ready: true, completedLines, connected: true },

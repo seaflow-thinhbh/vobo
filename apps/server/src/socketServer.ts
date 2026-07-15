@@ -55,6 +55,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       turnMs: room.turnMs,
       rolling: room.state?.phase === 'playing' ? (room.rolling ?? false) : false,
       replayVotes: room.replayVotes ? [...room.replayVotes] : [],
+      gridSize: room.gridSize,
     };
   }
 
@@ -142,8 +143,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     const requireConn = () =>
       conn.code && conn.playerId ? { code: conn.code, playerId: conn.playerId } : undefined;
 
-    socket.on('room:create', ({ name, turnMs }, ack) => {
-      const { code, playerId, token } = manager.createRoom(name, turnMs);
+    socket.on('room:create', ({ name, turnMs, gridSize }, ack) => {
+      const { code, playerId, token } = manager.createRoom(name, turnMs, gridSize as 5 | 6 | 7 | undefined);
       conn.code = code;
       conn.playerId = playerId;
       manager.attachSocket(code, playerId, socket.id);
@@ -286,6 +287,33 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       const name = player?.name ?? '?';
       const msg = chat.addMessage(c.code, c.playerId, name, text.trim());
       io.to(c.code).emit('chat:message', msg);
+      ack({ ok: true });
+    });
+
+    socket.on('interaction:send', ({ targetPlayerId, type }, ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      const room = store.get(c.code);
+      if (!room) return ack({ ok: false, code: 'no_room', message: 'Không tìm thấy phòng' });
+      if (!room.state || (room.state.phase !== 'playing' && room.state.phase !== 'setup')) {
+        return ack({ ok: false, code: 'bad_phase', message: 'Chỉ tương tác khi đang chơi' });
+      }
+      const sender = room.state.players.find((p) => p.id === c.playerId);
+      if (!sender) return ack({ ok: false, code: 'no_player', message: 'Không tìm thấy người chơi' });
+
+      const targets = targetPlayerId === '*'
+        ? room.state.players.filter((p) => p.id !== c.playerId).map((p) => p.id)
+        : [targetPlayerId];
+
+      for (const tid of targets) {
+        if (!room.state.players.some((p) => p.id === tid)) continue;
+        io.to(c.code).emit('interaction:receive', {
+          fromId: c.playerId,
+          fromName: sender.name,
+          targetId: tid,
+          type,
+        });
+      }
       ack({ ok: true });
     });
 

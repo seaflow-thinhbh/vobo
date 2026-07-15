@@ -11,7 +11,7 @@ export interface GameEnd {
  */
 export interface GameModule<S, M, V> {
   id: string;
-  createInitialState(players: PlayerSeat[], rng: Rng, opts?: { firstPlayerId?: string }): S;
+  createInitialState(players: PlayerSeat[], rng: Rng, opts?: { firstPlayerId?: string; gridSize?: number }): S;
   validateMove(state: S, playerId: string, move: M): Result;
   applyMove(state: S, playerId: string, move: M): S;
   checkGameEnd(state: S): GameEnd;

@@ -36,10 +36,10 @@ function callNumber(state: BingoState, callerId: string, n: number): BingoState 
   const called = new Set(calledNumbers);
   const players = state.players.map((p) => ({
     ...p,
-    completedLines: countCompletedLines(p.card, called),
+    completedLines: countCompletedLines(p.card, called, state.gridSize),
   }));
 
-  const winnersSet = players.filter((p) => p.completedLines >= 5).map((p) => p.id);
+  const winnersSet = players.filter((p) => p.completedLines >= state.gridSize).map((p) => p.id);
   if (winnersSet.length > 0) {
     const winnerId = resolveWinner(state.turnOrder, callerId, winnersSet);
     return { ...state, calledNumbers, players, phase: 'finished', winners: [winnerId] };

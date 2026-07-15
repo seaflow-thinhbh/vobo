@@ -11,6 +11,7 @@ function player(id: string, card: number[], overrides: Partial<BingoPlayer> = {}
 // Two players, playing phase. 'a' is on turn. Numbers 1..4 already called (top row minus the 5th cell).
 function nearWinState(): BingoState {
   return {
+    gridSize: 5,
     phase: 'playing',
     players: [player('a', ordered), player('b', ordered)],
     turnOrder: ['a', 'b'],
@@ -53,6 +54,7 @@ describe('winner resolution (caller-priority)', () => {
       1, 2, 3, 4, // top row minus 5
     ];
     return {
+      gridSize: 5,
       phase: 'playing',
       players: [player('a', ordered, { completedLines: 4 }), player('b', ordered, { completedLines: 4 })],
       turnOrder: ['a', 'b'],
@@ -76,6 +78,7 @@ describe('winner resolution (caller-priority)', () => {
     const aCard = [1, 22, 2, 3, 4, 23, 5, 6, 7, 8, 9, 10, 24, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25];
     const called = Array.from({ length: 20 }, (_, i) => i + 1); // 1..20
     const state: BingoState = {
+      gridSize: 5,
       phase: 'playing',
       players: [player('a', aCard), player('b', ordered)],
       turnOrder: ['a', 'b'],
