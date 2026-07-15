@@ -28,6 +28,7 @@ export function createInitialState(
     ready: p.isBot,
     completedLines: 0,
     connected: true,
+    bombNumber: null,
   }));
 
   let turnOrder = shuffle(
@@ -47,5 +48,6 @@ export function createInitialState(
     currentTurn: 0,
     calledNumbers: [],
     winners: [],
+    skipNext: false,
   };
 }

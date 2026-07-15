@@ -12,11 +12,13 @@ import { TurnReveal } from './TurnReveal';
 import { ChatPanel } from './ChatPanel';
 import { Leaderboard } from './Leaderboard';
 import { InteractionEffect } from './InteractionEffect';
+import { InteractionBar } from './InteractionBar';
 
 export interface RoomActions {
   addBot: (d: Difficulty) => Promise<unknown>;
   start: () => Promise<unknown>;
   fillCard: (card: number[]) => Promise<unknown>;
+  placeBomb: (n: number) => Promise<unknown>;
   ready: () => Promise<unknown>;
   call: (n: number) => Promise<unknown>;
   leave: () => Promise<unknown>;
@@ -112,14 +114,11 @@ export function RoomView({
     </div>
   );
 
-  const carousel = (
-    <PlayerCarousel
+  const interactionBar = (
+    <InteractionBar
       players={snapshot.roster}
-      currentPlayerId={view.currentPlayerId}
       youId={snapshot.youId}
-      turnStartedAt={snapshot.turnStartedAt}
-      turnEndsAt={snapshot.turnEndsAt}
-      onInteract={(targetId, type) => {
+      onSend={(targetId, type) => {
         void actions.sendInteraction(targetId, type);
       }}
     />
@@ -157,11 +156,17 @@ export function RoomView({
       <>
         {backButton}
         {sidebar}
-        <div className="mx-auto max-w-md px-2">
-          {carousel}
+        <div className="mx-auto max-w-md px-2 pb-16">
+          <PlayerCarousel
+            players={snapshot.roster}
+            currentPlayerId={view.currentPlayerId}
+            youId={snapshot.youId}
+            turnStartedAt={snapshot.turnStartedAt}
+            turnEndsAt={snapshot.turnEndsAt}
+          />
           <ResultCelebration snapshot={snapshot} />
           <div className="flex justify-center">
-            <GameBoard view={view} />
+            <GameBoard view={view} onPlaceBomb={actions.placeBomb} />
           </div>
           <ResultOverlay snapshot={snapshot} onPlayAgain={actions.readyToReplay} onLeave={actions.leave} />
         </div>
@@ -180,12 +185,19 @@ export function RoomView({
       {snapshot.rolling ? (
         <TurnReveal players={snapshot.roster} firstPlayerId={view.currentPlayerId} />
       ) : (
-        <div className="mx-auto flex w-full max-w-md flex-col gap-3 px-2">
-          {carousel}
-          <GameBoard view={view} isYourTurn={view.currentPlayerId === snapshot.youId} onCall={actions.call} />
+        <div className="mx-auto flex w-full max-w-md flex-col gap-3 px-2 pb-20">
+          <PlayerCarousel
+            players={snapshot.roster}
+            currentPlayerId={view.currentPlayerId}
+            youId={snapshot.youId}
+            turnStartedAt={snapshot.turnStartedAt}
+            turnEndsAt={snapshot.turnEndsAt}
+          />
+          <GameBoard view={view} isYourTurn={view.currentPlayerId === snapshot.youId} onCall={actions.call} onPlaceBomb={actions.placeBomb} />
         </div>
       )}
       {chat}
+      {interactionBar}
       {activeEffects.map((ev, i) => (
         <InteractionEffect key={`${ev.fromId}-${ev.type}-${i}`} event={ev} youId={snapshot.youId} onDone={() => removeEffect(ev)} />
       ))}

@@ -13,6 +13,8 @@ export default function LandingPage() {
   const [error, setError] = useState('');
   const [turnSec, setTurnSec] = useState(20);
   const [gridSize, setGridSize] = useState<number>(5);
+  const [gameMode, setGameMode] = useState<'fun' | 'casual'>('fun');
+  const [bombsEnabled, setBombsEnabled] = useState(false);
 
   useEffect(() => {
     if (!connected) return;
@@ -24,7 +26,7 @@ export default function LandingPage() {
 
   async function onCreate() {
     if (!name.trim()) return setError('Nhập tên trước đã');
-    const r = await createRoom(name.trim(), turnSec * 1000, gridSize);
+    const r = await createRoom(name.trim(), turnSec * 1000, gridSize, gameMode, bombsEnabled);
     if (r.ok) router.push(`/room/${r.code}`);
     else setError(r.message);
   }
@@ -65,6 +67,40 @@ export default function LandingPage() {
             </button>
           ))}
         </div>
+      </div>
+      <div className="mb-3">
+        <div className="mb-1 text-xs text-slate-400">Kiểu chơi</div>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setGameMode('fun')}
+            className={`flex-1 rounded py-1.5 text-sm font-medium ${
+              gameMode === 'fun' ? 'bg-rose-700 text-white' : 'bg-slate-700 text-slate-300'
+            }`}
+          >
+            🔥 Fun
+          </button>
+          <button
+            type="button"
+            onClick={() => setGameMode('casual')}
+            className={`flex-1 rounded py-1.5 text-sm font-medium ${
+              gameMode === 'casual' ? 'bg-emerald-700 text-white' : 'bg-slate-700 text-slate-300'
+            }`}
+          >
+            😌 Casual
+          </button>
+        </div>
+        {gameMode === 'casual' && (
+          <label className="mt-2 flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={bombsEnabled}
+              onChange={(e) => setBombsEnabled(e.target.checked)}
+              className="rounded"
+            />
+            💣 Bật bomb
+          </label>
+        )}
       </div>
       <div className="mb-3">
         <div className="mb-1 text-xs text-slate-400">Thời gian mỗi lượt</div>

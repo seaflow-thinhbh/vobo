@@ -14,6 +14,7 @@ export const INTERACTIONS: InteractionDef[] = [
   { type: 'flower', icon: '💐', label: 'Tặng hoa', sound: 'chime', isText: false },
   { type: 'brick', icon: '🧱', label: 'Ném gạch', sound: 'thud', isText: false },
   { type: 'smoke', icon: '💨', label: 'Bom mù', sound: 'poof', isText: false },
+  { type: 'shit', icon: '💩', label: 'Cục shit', sound: 'splat', isText: false },
   { type: 'chicken', icon: '🐔', label: 'Con gà', sound: 'cluck', isText: true, text: 'Con gà!' },
   { type: 'hurry', icon: '⏩', label: 'Nhanh lên', sound: 'tick', isText: true, text: 'Nhanh mẹ lên!' },
   { type: 'young', icon: '👶', label: 'Tuổi non', sound: 'laugh', isText: true, text: 'Tuổi ***!' },

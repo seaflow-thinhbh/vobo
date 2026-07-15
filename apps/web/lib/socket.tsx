@@ -24,11 +24,12 @@ interface SocketContextValue {
   connected: boolean;
   snapshot: RoomSnapshot | null;
   clearSnapshot: () => void;
-  createRoom: (name: string, turnMs?: number, gridSize?: number) => Promise<Ack<{ code: string; playerId: string; token: string }>>;
+  createRoom: (name: string, turnMs?: number, gridSize?: number, gameMode?: string, bombsEnabled?: boolean) => Promise<Ack<{ code: string; playerId: string; token: string }>>;
   joinRoom: (code: string, name: string) => Promise<Ack<{ playerId: string; token: string; nameChanged?: boolean; newName?: string }>>;
   resume: (code: string, token: string) => Promise<Ack<{ playerId: string }>>;
   addBot: (d: Difficulty) => Promise<Ok>;
   fillCard: (card: number[]) => Promise<Ok>;
+  placeBomb: (n: number) => Promise<Ok>;
   ready: () => Promise<Ok>;
   start: () => Promise<Ok>;
   call: (n: number) => Promise<Ok>;
@@ -111,9 +112,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     connected,
     snapshot,
     clearSnapshot: () => { setSnapshot(null); setMessages([]); },
-    createRoom: async (name, turnMs, gridSize) => {
+    createRoom: async (name, turnMs, gridSize, gameMode, bombsEnabled) => {
       setJoining(true);
-      const r = await emit<Ack<{ code: string; playerId: string; token: string }>>('room:create', { name, turnMs, gridSize });
+      const r = await emit<Ack<{ code: string; playerId: string; token: string }>>('room:create', { name, turnMs, gridSize, gameMode, bombsEnabled });
       setJoining(false);
       if (r.ok) saveToken(r.code, r.token);
       return r;
@@ -128,6 +129,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     resume: (code, token) => emit('room:resume', { code, token }),
     addBot: (d) => emit('room:addBot', { difficulty: d }),
     fillCard: (card) => emit('player:fillCard', { card }),
+    placeBomb: (n) => emit('player:placeBomb', { n }),
     ready: () => emit('player:ready'),
     start: () => emit('room:start'),
     call: (n) => emit('game:call', { n }),

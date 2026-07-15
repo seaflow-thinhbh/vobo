@@ -56,6 +56,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       rolling: room.state?.phase === 'playing' ? (room.rolling ?? false) : false,
       replayVotes: room.replayVotes ? [...room.replayVotes] : [],
       gridSize: room.gridSize,
+      gameMode: room.gameMode,
     };
   }
 
@@ -133,7 +134,7 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     if (cur.isBot) {
       turnTimers.set(code, setTimeout(() => { manager.botCall(code); orchestrate(code); }, cfg.botDelayMs));
     } else {
-      turnTimers.set(code, setTimeout(() => { manager.autoCall(code); orchestrate(code); }, room.turnMs));
+      turnTimers.set(code, setTimeout(() => { manager.skipTurn(code); orchestrate(code); }, room.turnMs));
     }
   }
 
@@ -143,8 +144,8 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
     const requireConn = () =>
       conn.code && conn.playerId ? { code: conn.code, playerId: conn.playerId } : undefined;
 
-    socket.on('room:create', ({ name, turnMs, gridSize }, ack) => {
-      const { code, playerId, token } = manager.createRoom(name, turnMs, gridSize as 5 | 6 | 7 | undefined);
+    socket.on('room:create', ({ name, turnMs, gridSize, gameMode, bombsEnabled }, ack) => {
+      const { code, playerId, token } = manager.createRoom(name, turnMs, gridSize as 5 | 6 | 7 | undefined, gameMode as 'fun' | 'casual' | undefined, bombsEnabled);
       conn.code = code;
       conn.playerId = playerId;
       manager.attachSocket(code, playerId, socket.id);
@@ -198,6 +199,14 @@ export function attachSocketServer(io: Io, manager: RoomManager, store: RoomStor
       const c = requireConn();
       if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
       const r = manager.fillCard(c.code, c.playerId, card);
+      ack(r.ok ? { ok: true } : r);
+      if (r.ok) broadcast(c.code);
+    });
+
+    socket.on('player:placeBomb', ({ n }, ack) => {
+      const c = requireConn();
+      if (!c) return ack({ ok: false, code: 'no_conn', message: 'Chưa vào phòng' });
+      const r = manager.placeBomb(c.code, c.playerId, n);
       ack(r.ok ? { ok: true } : r);
       if (r.ok) broadcast(c.code);
     });

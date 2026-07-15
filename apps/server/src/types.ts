@@ -18,6 +18,8 @@ export interface Room {
   hostId: string;
   gameId: 'bingo';
   gridSize: GridSize; // room's grid mode (5, 6, or 7)
+  gameMode: 'fun' | 'casual'; // fun = bombs always, casual = checkbox
+  bombsEnabled: boolean; // only meaningful in casual mode
   roster: PlayerSeat[]; // lobby roster; frozen into `state` when the game starts
   state?: BingoState; // engine state, created on start
   seats: Map<string, Seat>; // playerId -> auth/connection (HUMANS only; bots have no seat)
@@ -57,6 +59,7 @@ export interface OpenRoom {
   playerCount: number;
   maxPlayers: number;
   gridSize: number; // e.g. 5, 6, 7
+  gameMode: string; // 'fun' | 'casual'
 }
 
 /** Per-player snapshot pushed to a client after any change. */
@@ -73,12 +76,13 @@ export interface RoomSnapshot {
   rolling: boolean; // true during the dice-reveal window
   replayVotes: string[]; // danh sách người chơi đã bình chọn chơi lại
   gridSize: number; // room's grid mode
+  gameMode: string; // 'fun' | 'casual'
 }
 
 // ---- Socket payloads & acks ----
 export type Ack<T> = T | { ok: false; code: string; message: string };
 
-export interface CreatePayload { name: string; turnMs?: number; gridSize?: number; }
+export interface CreatePayload { name: string; turnMs?: number; gridSize?: number; gameMode?: string; bombsEnabled?: boolean; }
 export interface JoinPayload { code: string; name: string; }
 export interface ResumePayload { code: string; token: string; }
 export interface AddBotPayload { difficulty: Difficulty; }
@@ -90,7 +94,7 @@ export interface JoinAck { ok: true; playerId: string; token: string; nameChange
 export interface ResumeAck { ok: true; playerId: string; }
 export interface OkAck { ok: true; }
 
-export type InteractionType = 'tomato' | 'flower' | 'brick' | 'smoke' | 'chicken' | 'hurry' | 'young' | 'fire' | 'heart' | 'laugh' | 'angry' | 'like' | 'clap';
+export type InteractionType = 'tomato' | 'flower' | 'brick' | 'smoke' | 'shit' | 'chicken' | 'hurry' | 'young' | 'fire' | 'heart' | 'laugh' | 'angry' | 'like' | 'clap';
 
 export interface InteractionPayload { targetPlayerId: string; type: InteractionType; }
 export interface InteractionEvent { fromId: string; fromName: string; targetId: string; type: InteractionType; }
@@ -101,6 +105,7 @@ export interface ClientToServerEvents {
   'room:resume': (p: ResumePayload, ack: (r: Ack<ResumeAck>) => void) => void;
   'room:addBot': (p: AddBotPayload, ack: (r: Ack<OkAck>) => void) => void;
   'player:fillCard': (p: FillCardPayload, ack: (r: Ack<OkAck>) => void) => void;
+  'player:placeBomb': (p: { n: number }, ack: (r: Ack<OkAck>) => void) => void;
   'player:ready': (ack: (r: Ack<OkAck>) => void) => void;
   'room:start': (ack: (r: Ack<OkAck>) => void) => void;
   'game:call': (p: CallPayload, ack: (r: Ack<OkAck>) => void) => void;

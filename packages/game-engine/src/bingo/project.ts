@@ -26,6 +26,7 @@ export function projectStateFor(state: BingoState, playerId: string): BingoView 
       marked: markedMask(you.card, called),
       completedLines: you.completedLines,
       ready: you.ready,
+      bombNumber: you.bombNumber,
     },
     opponents,
     calledNumbers: [...state.calledNumbers],

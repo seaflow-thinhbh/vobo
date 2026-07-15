@@ -9,13 +9,14 @@ function setupState(): BingoState {
     gridSize: 5,
     phase: 'setup',
     players: [
-      { id: 'a', name: 'A', isBot: false, card: [], ready: false, completedLines: 0, connected: true },
-      { id: 'b', name: 'B', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true },
+      { id: 'a', name: 'A', isBot: false, card: [], ready: false, completedLines: 0, connected: true, bombNumber: null },
+      { id: 'b', name: 'B', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true, bombNumber: null },
     ],
     turnOrder: [],
     currentTurn: 0,
     calledNumbers: [],
     winners: [],
+    skipNext: false,
   };
 }
 
@@ -24,13 +25,14 @@ function playingState(): BingoState {
     gridSize: 5,
     phase: 'playing',
     players: [
-      { id: 'a', name: 'A', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true },
-      { id: 'b', name: 'B', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true },
+      { id: 'a', name: 'A', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true, bombNumber: null },
+      { id: 'b', name: 'B', isBot: false, card: ordered, ready: true, completedLines: 0, connected: true, bombNumber: null },
     ],
     turnOrder: ['a', 'b'],
     currentTurn: 0,
     calledNumbers: [7],
     winners: [],
+    skipNext: false,
   };
 }
 

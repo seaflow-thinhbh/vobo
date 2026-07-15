@@ -5,7 +5,7 @@ import type { BingoState, BingoPlayer } from './types';
 const ordered = Array.from({ length: 25 }, (_, i) => i + 1);
 
 function player(id: string, card: number[], overrides: Partial<BingoPlayer> = {}): BingoPlayer {
-  return { id, name: id.toUpperCase(), isBot: false, card, ready: true, completedLines: 0, connected: true, ...overrides };
+  return { id, name: id.toUpperCase(), isBot: false, card, ready: true, completedLines: 0, connected: true, bombNumber: null, ...overrides };
 }
 
 // Two players, playing phase. 'a' is on turn. Numbers 1..4 already called (top row minus the 5th cell).
@@ -18,6 +18,7 @@ function nearWinState(): BingoState {
     currentTurn: 0,
     calledNumbers: [1, 2, 3, 4],
     winners: [],
+    skipNext: false,
   };
 }
 
@@ -61,6 +62,7 @@ describe('winner resolution (caller-priority)', () => {
       currentTurn: 0, // a is the caller
       calledNumbers: called,
       winners: [],
+      skipNext: false,
     };
   }
 
@@ -85,6 +87,7 @@ describe('winner resolution (caller-priority)', () => {
       currentTurn: 0, // 'a' is the caller
       calledNumbers: called,
       winners: [],
+      skipNext: false,
     };
     const s = applyMove(state, 'a', { type: 'CallNumber', n: 21 });
     expect(s.phase).toBe('finished');

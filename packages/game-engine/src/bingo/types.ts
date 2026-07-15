@@ -12,6 +12,7 @@ export interface BingoPlayer {
   ready: boolean;
   completedLines: number; // 0..gridSize
   connected: boolean;
+  bombNumber: number | null; // number with bomb trap (only visible to owner)
 }
 
 export interface BingoState {
@@ -22,12 +23,14 @@ export interface BingoState {
   currentTurn: number; // index into turnOrder
   calledNumbers: number[]; // in call order
   winners: string[]; // exactly one id when finished
+  skipNext: boolean; // when true, next player is skipped (bomb penalty)
 }
 
 export type BingoMove =
   | { type: 'FillCard'; card: number[] }
   | { type: 'SetReady' }
-  | { type: 'CallNumber'; n: number };
+  | { type: 'CallNumber'; n: number }
+  | { type: 'PlaceBomb'; n: number };
 
 export interface BingoView {
   gridSize: GridSize;
@@ -38,6 +41,7 @@ export interface BingoView {
     marked: boolean[]; // length gridSize*gridSize, aligned with card
     completedLines: number;
     ready: boolean;
+    bombNumber: number | null;
   };
   opponents: Array<{
     id: string;
